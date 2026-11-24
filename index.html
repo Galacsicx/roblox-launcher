@@ -158,6 +158,54 @@
         .friend-name { font-weight: bold; font-size: 16px; color: #fff; text-align: center; }
         .friend-username { font-size: 12px; color: #93c5fd; margin-bottom: 10px; }
 
+        /* Стили для запросов в друзья */
+        .requests-container {
+            grid-column: 1 / -1;
+            background: #13294d;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .requests-title {
+            font-weight: bold;
+            color: #93c5fd;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #2e5699;
+            padding-bottom: 10px;
+        }
+        .request-list {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .request-card {
+            background: #0d1b36;
+            border: 1px solid #2e5699;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .request-avatar {
+            width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+        }
+        .request-info { display: flex; flex-direction: column; }
+        .request-name { font-weight: bold; color: white; }
+        .request-username { font-size: 12px; color: #93c5fd; }
+        .btn-accept {
+            background: #4ade80; color: #0f172a; border: none; padding: 6px 12px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;
+        }
+        .btn-accept:hover { background: #22c55e; }
+        .btn-decline {
+            background: transparent; color: #f87171; border: 1px solid #ef4444;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;
+        }
+        .btn-decline:hover { background: rgba(239, 68, 68, 0.2); }
+
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.8); z-index: 1000; justify-content: center; align-items: center;
@@ -213,8 +261,8 @@
     </div>
 
     <div class="control-bar" id="friendControlBar" style="display:none;">
-        <input type="text" class="search-input" id="friendSearchInput" placeholder="Enter username to add friend..." onkeydown="if(event.key==='Enter') addFriendByUsername()">
-        <button class="add-btn" onclick="addFriendByUsername()">+ Add Friend</button>
+        <input type="text" class="search-input" id="friendSearchInput" placeholder="Enter username to send request..." onkeydown="if(event.key==='Enter') addFriendByUsername()">
+        <button class="add-btn" onclick="addFriendByUsername()">+ Send Friend Request</button>
         <span id="friendStatus" style="color: #93c5fd; font-size: 13px;"></span>
     </div>
 
@@ -309,9 +357,8 @@ async function fetchRobloxGet(url) {
     return null;
 }
 
-// Новая функция для POST-запроса (нужна для точного поиска по нику)
 async function fetchRobloxPost(url, body) {
-    const proxyUrl = toRoProxy(url); // Используем roproxy, он поддерживает POST
+    const proxyUrl = toRoProxy(url);
     try {
         const res = await fetch(proxyUrl, {
             method: 'POST',
@@ -328,6 +375,7 @@ async function fetchRobloxPost(url, body) {
 
 let savedUser = safeParse('robloxUserProfile', null);
 let myFriends = [];
+let myRequests = [];
 let myGames = [];
 let discoverGames = [];
 let currentTab = 'discover';
@@ -340,9 +388,11 @@ function loadUserData() {
     if (savedUser && savedUser.id) {
         myGames = safeParse('library_' + savedUser.id, []);
         myFriends = safeParse('friends_' + savedUser.id, []);
+        myRequests = safeParse('requests_' + savedUser.id, []);
     } else {
         myGames = [];
         myFriends = [];
+        myRequests = [];
     }
 }
 
@@ -451,6 +501,7 @@ function logoutUser() {
     localStorage.removeItem('robloxUserProfile');
     myGames = [];
     myFriends = [];
+    myRequests = [];
     renderProfile();
     switchTab('discover');
 }
@@ -592,8 +643,27 @@ function renderFriends() {
         return;
     }
 
+    // Рендерим запросы в друзья
+    if (myRequests.length > 0) {
+        let reqHtml = `<div class="requests-container"><div class="requests-title">Pending Friend Requests (${myRequests.length})</div><div class="request-list">`;
+        myRequests.forEach(req => {
+            reqHtml += `<div class="request-card">
+                <img class="request-avatar" src="${req.avatar || makePoster(req.name, '#3b82f6', '#1d4ed8')}">
+                <div class="request-info">
+                    <div class="request-name">${escapeHTML(req.displayName || req.name)}</div>
+                    <div class="request-username">@${escapeHTML(req.name)}</div>
+                </div>
+                <button class="btn-accept" onclick="acceptRequest('${req.id}')">Accept</button>
+                <button class="btn-decline" onclick="declineRequest('${req.id}')">Decline</button>
+            </div>`;
+        });
+        reqHtml += `</div></div>`;
+        grid.innerHTML += reqHtml;
+    }
+
+    // Рендерим принятых друзей
     if (myFriends.length === 0) {
-        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;text-align:center;">No friends yet. Use the search bar above to find and add them!</div>';
+        grid.innerHTML += '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;text-align:center;">No friends yet. Use the search bar above to find and add them!</div>';
         return;
     }
 
@@ -621,7 +691,6 @@ async function addFriendByUsername() {
     status.textContent = 'Searching...';
     let userId = '', realName = '', displayName = '', avatarUrl = '';
 
-    // 1. Сначала пробуем обычный поиск
     if (/^\d+$/.test(rawQuery)) {
         userId = rawQuery;
         const userInfo = await fetchRobloxGet(`https://users.roblox.com/v1/users/${userId}`);
@@ -639,7 +708,6 @@ async function addFriendByUsername() {
         }
     }
 
-    // 2. Если не нашли, пробуем точный поиск по нику
     if (!userId) {
         const exactData = await fetchRobloxPost(`https://users.roblox.com/v1/usernames/users`, {
             usernames: [rawQuery],
@@ -664,23 +732,53 @@ async function addFriendByUsername() {
         setTimeout(() => status.textContent = '', 3000);
         return;
     }
+    
+    if (myRequests.some(f => f.id === userId)) {
+        status.textContent = 'Request already sent!';
+        setTimeout(() => status.textContent = '', 3000);
+        return;
+    }
 
     const thumbData = await fetchRobloxGet(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`);
     if (thumbData && thumbData.data && thumbData.data.length > 0) {
         avatarUrl = thumbData.data[0].imageUrl || '';
     }
 
-    myFriends.unshift({ 
+    // Добавляем в запросы, а не в друзья
+    myRequests.unshift({ 
         id: userId, 
         name: realName, 
         displayName: displayName, 
         avatar: avatarUrl 
     });
     
-    localStorage.setItem('friends_' + savedUser.id, JSON.stringify(myFriends));
+    localStorage.setItem('requests_' + savedUser.id, JSON.stringify(myRequests));
     input.value = '';
-    status.textContent = 'Friend added!';
-    setTimeout(() => status.textContent = '', 3000);
+    status.textContent = 'Friend request sent! Check pending requests above.';
+    setTimeout(() => status.textContent = '', 4000);
+    renderFriends();
+}
+
+// Принятие запроса в друзья
+function acceptRequest(id) {
+    if (!savedUser) return;
+    const reqIndex = myRequests.findIndex(f => f.id === id);
+    if (reqIndex === -1) return;
+
+    const friend = myRequests[reqIndex];
+    myRequests.splice(reqIndex, 1);
+    myFriends.unshift(friend);
+
+    localStorage.setItem('requests_' + savedUser.id, JSON.stringify(myRequests));
+    localStorage.setItem('friends_' + savedUser.id, JSON.stringify(myFriends));
+    renderFriends();
+}
+
+// Отклонение запроса в друзья
+function declineRequest(id) {
+    if (!savedUser) return;
+    myRequests = myRequests.filter(f => f.id !== id);
+    localStorage.setItem('requests_' + savedUser.id, JSON.stringify(myRequests));
     renderFriends();
 }
 
