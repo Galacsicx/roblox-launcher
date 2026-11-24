@@ -158,6 +158,7 @@
         .friend-name { font-weight: bold; font-size: 16px; color: #fff; text-align: center; }
         .friend-username { font-size: 12px; color: #93c5fd; margin-bottom: 10px; }
 
+        /* Стили для блоков запросов */
         .requests-container {
             grid-column: 1 / -1;
             background: #13294d;
@@ -372,8 +373,13 @@ async function fetchRobloxPost(url, body) {
     return null;
 }
 
-function getGlobalRequests() { return safeParse('global_friend_requests', []); }
-function saveGlobalRequests(reqs) { localStorage.setItem('global_friend_requests', JSON.stringify(reqs)); }
+// Глобальная база запросов (симулирует сервер)
+function getGlobalRequests() {
+    return safeParse('global_friend_requests', []);
+}
+function saveGlobalRequests(reqs) {
+    localStorage.setItem('global_friend_requests', JSON.stringify(reqs));
+}
 
 let savedUser = safeParse('robloxUserProfile', null);
 let myFriends = [];
@@ -642,9 +648,13 @@ function renderFriends() {
     }
 
     const globalRequests = getGlobalRequests();
+    
+    // Входящие запросы (для текущего пользователя)
     const incoming = globalRequests.filter(r => r.receiverId === savedUser.id);
+    // Исходящие запросы (отправленные текущим пользователем)
     const outgoing = globalRequests.filter(r => r.senderId === savedUser.id);
 
+    // Рендерим Входящие
     if (incoming.length > 0) {
         let reqHtml = `<div class="requests-container"><div class="requests-title">Incoming Friend Requests (${incoming.length})</div><div class="request-list">`;
         incoming.forEach(req => {
@@ -662,6 +672,7 @@ function renderFriends() {
         grid.innerHTML += reqHtml;
     }
 
+    // Рендерим Исходящие
     if (outgoing.length > 0) {
         let reqHtml = `<div class="requests-container" style="border-color: #facc15;"><div class="requests-title" style="color: #facc15;">Outgoing Requests (${outgoing.length})</div><div class="request-list">`;
         outgoing.forEach(req => {
@@ -678,6 +689,7 @@ function renderFriends() {
         grid.innerHTML += reqHtml;
     }
 
+    // Рендерим друзей
     if (myFriends.length === 0) {
         grid.innerHTML += '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;text-align:center;">No friends yet. Use the search bar above to find and add them!</div>';
         return;
@@ -767,6 +779,7 @@ async function sendFriendRequest() {
         avatarUrl = thumbData.data[0].imageUrl || '';
     }
 
+    // Добавляем запрос в ГЛОБАЛЬНУЮ базу
     globalReqs.push({
         id: Date.now().toString(),
         senderId: savedUser.id,
@@ -786,6 +799,7 @@ async function sendFriendRequest() {
     renderFriends();
 }
 
+// Принятие запроса (действие получателя)
 function acceptRequest(requestId) {
     if (!savedUser) return;
     const globalReqs = getGlobalRequests();
@@ -796,6 +810,7 @@ function acceptRequest(requestId) {
     globalReqs.splice(reqIndex, 1);
     saveGlobalRequests(globalReqs);
 
+    // Добавляем отправителя в друзья получателю (себе)
     const myList = safeParse('friends_' + savedUser.id, []);
     if (!myList.some(f => f.id === req.senderId)) {
         myList.unshift({
@@ -807,6 +822,7 @@ function acceptRequest(requestId) {
         localStorage.setItem('friends_' + savedUser.id, JSON.stringify(myList));
     }
 
+    // Добавляем получателя (себя) в друзья отправителю
     const senderList = safeParse('friends_' + req.senderId, []);
     if (!senderList.some(f => f.id === savedUser.id)) {
         senderList.unshift({
@@ -818,16 +834,18 @@ function acceptRequest(requestId) {
         localStorage.setItem('friends_' + req.senderId, JSON.stringify(senderList));
     }
 
-    loadUserData();
+    loadUserData(); // Перезагружаем данные
     renderFriends();
 }
 
+// Отклонение запроса (действие получателя)
 function declineRequest(requestId) {
     const globalReqs = getGlobalRequests().filter(r => r.id !== requestId);
     saveGlobalRequests(globalReqs);
     renderFriends();
 }
 
+// Отмена своего запроса (действие отправителя)
 function cancelRequest(requestId) {
     const globalReqs = getGlobalRequests().filter(r => r.id !== requestId);
     saveGlobalRequests(globalReqs);
@@ -881,10 +899,12 @@ function closeProfile() {
 function removeFriendFromModal() {
     if (!currentProfileId || !savedUser) return;
     
+    // Удаляем себя из друзей у друга
     const friendList = safeParse('friends_' + currentProfileId, []);
     const updatedFriendList = friendList.filter(f => f.id !== savedUser.id);
     localStorage.setItem('friends_' + currentProfileId, JSON.stringify(updatedFriendList));
 
+    // Удаляем друга у себя
     myFriends = myFriends.filter(f => f.id !== currentProfileId);
     localStorage.setItem('friends_' + savedUser.id, JSON.stringify(myFriends));
 
@@ -1036,31 +1056,6 @@ async function updateOnlineCounts() {
     renderGames();
 }
 
-// ===== АВТООБНОВЛЕНИЕ ДАННЫХ =====
-function autoSync() {
-    if (!savedUser) return;
-
-    const oldFriendsStr = localStorage.getItem('friends_' + savedUser.id) || '[]';
-    const oldRequestsStr = localStorage.getItem('global_friend_requests') || '[]';
-
-    // Читаем актуальные данные
-    loadUserData();
-    const newFriendsStr = JSON.stringify(myFriends);
-    const newRequestsStr = localStorage.getItem('global_friend_requests') || '[]';
-
-    // Если на вкладке друзей и данные изменились — обновляем UI
-    if (currentTab === 'friends') {
-        if (oldFriendsStr !== newFriendsStr || oldRequestsStr !== newRequestsStr) {
-            renderFriends();
-        }
-    } else {
-        // Если мы не на вкладке друзей, но друзья изменились — просто обновляем массив в памяти
-        // (чтобы при переходе на вкладку было актуально)
-    }
-}
-
-// Запускаем синхронизацию каждые 10 секунд
-setInterval(autoSync, 10000);
 setInterval(updateOnlineCounts, 60000);
 
 loadUserData();
