@@ -269,27 +269,27 @@
         <div class="left-header">
             <h2 style="margin:0;">Roblox Launcher</h2>
             <div class="tabs">
-                <button class="tab-btn active" id="tabDiscover" onclick="switchTab('discover')">🔥 Популярные игры</button>
-                <button class="tab-btn" id="tabMy" onclick="switchTab('my')">⭐ Мои игры</button>
+                <button class="tab-btn active" id="tabDiscover" onclick="switchTab('discover')">🔥 Popular Games</button>
+                <button class="tab-btn" id="tabMy" onclick="switchTab('my')">⭐ My Games</button>
             </div>
         </div>
         <div class="profile-box" id="profileBox"></div>
     </div>
 
     <div class="control-bar">
-        <input type="text" class="search-input" id="searchInput" placeholder="Поиск по названию или вставь ID игры..." onkeyup="renderGames()">
-        <button class="add-btn" onclick="addGameById()">+ Добавить игру по ID</button>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search by name or paste Game ID..." onkeyup="renderGames()">
+        <button class="add-btn" onclick="addGameById()">+ Add Game by ID</button>
         <span id="status" style="color: #93c5fd; font-size: 13px;"></span>
     </div>
 
     <div class="games-grid" id="gamesGrid"></div>
-    <div id="loader" class="loader-container" style="display:none;">⏳ Загрузка новых игр...</div>
+    <div id="loader" class="loader-container" style="display:none;">⏳ Loading new games...</div>
 </div>
 
 <input type="file" id="filePicker" accept="image/*" style="display:none">
 
 <script>
-window.onerror = function(msg) { console.error("Ошибка JS:", msg); };
+window.onerror = function(msg) { console.error("JS Error:", msg); };
 
 function safeParse(key, fallback) {
     try {
@@ -361,25 +361,25 @@ function renderProfile() {
         const imgTag = activeAvatar ? `<img src="${activeAvatar}" onerror="this.remove()" alt="Avatar">` : '';
         
         const clearBtn = savedUser.customAvatar 
-            ? `<div class="clear-avatar-btn" onclick="event.stopPropagation(); removeCustomAvatar()" title="Вернуть аватар Roblox">✕</div>` 
+            ? `<div class="clear-avatar-btn" onclick="event.stopPropagation(); removeCustomAvatar()" title="Restore Roblox avatar">✕</div>` 
             : '';
 
         box.innerHTML = `
             <div class="avatar-container">
-                <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Нажми, чтобы поставить свою картинку">
+                <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Click to upload custom image">
                     ${imgTag}${!activeAvatar ? letter : ''}
                 </div>
                 ${clearBtn}
             </div>
             <div>
                 <div class="username-text">${escapeHTML(savedUser.displayName || savedUser.name)} <span style="color:#93c5fd; font-weight:normal; font-size:12px;">(@${escapeHTML(savedUser.name)})</span></div>
-                <div class="user-sub">● ${savedUser.id ? 'ID: ' + savedUser.id : 'Кликни на кружок'}</div>
+                <div class="user-sub">● ${savedUser.id ? 'ID: ' + savedUser.id : 'Click circle for image'}</div>
             </div>
-            <button class="logout-btn" onclick="logoutUser()">Сменить</button>`;
+            <button class="logout-btn" onclick="logoutUser()">Switch</button>`;
     } else {
         box.innerHTML = `
-            <input type="text" class="login-input" id="usernameInput" placeholder="Ник или User ID" onkeydown="if(event.key==='Enter') loginUser()">
-            <button class="small-btn" onclick="loginUser()">Войти</button>`;
+            <input type="text" class="login-input" id="usernameInput" placeholder="Username or User ID" onkeydown="if(event.key==='Enter') loginUser()">
+            <button class="small-btn" onclick="loginUser()">Log in</button>`;
     }
 }
 
@@ -412,7 +412,7 @@ async function loginUser() {
     const rawQuery = input.value.replace('@', '').trim();
     if (!rawQuery) return;
     input.disabled = true;
-    input.value = 'Ищу...';
+    input.value = 'Searching...';
 
     let userId = '', realName = rawQuery, displayName = rawQuery, avatarUrl = '';
     let oldCustomAvatar = savedUser ? savedUser.customAvatar : null;
@@ -464,7 +464,7 @@ let currentTab = 'discover';
 let isLoading = false;
 let nextPageToken = null;
 let currentSortId = 'top-trending';
-const MAX_VISIBLE_GAMES = 40; 
+const MAX_VISIBLE_GAMES = 20; 
 
 async function fetchGamesFromRoblox(reset = false) {
     if (isLoading) return;
@@ -493,7 +493,7 @@ async function fetchGamesFromRoblox(reset = false) {
             id: String(g.rootPlaceId || g.placeId || g.id || ''),
             universeId: String(g.universeId || g.id || ''),
             name: g.name || 'Unknown',
-            playing: g.playerCount ? `${Number(g.playerCount).toLocaleString('ru-RU')} в игре` : 'Roblox',
+            playing: g.playerCount ? `${Number(g.playerCount).toLocaleString('en-US')} playing` : 'Roblox',
             c1: '#1e40af', c2: '#0f172a', img: ''
         })).filter(g => g.id && g.universeId);
 
@@ -510,7 +510,7 @@ async function fetchGamesFromRoblox(reset = false) {
         }
 
         if (!nextPageToken) {
-            if (loader) loader.innerHTML = '🎉 Это все игры на сегодня!';
+            if (loader) loader.innerHTML = '🎉 That is all games for today!';
             setTimeout(() => { if (loader) loader.style.display = 'none'; }, 2000);
         }
 
@@ -520,7 +520,7 @@ async function fetchGamesFromRoblox(reset = false) {
             loadThumbnailsForNewGames(uniqueNewGames);
         }
     } else {
-        if (loader) loader.textContent = '⚠️ Ошибка загрузки. Проверь интернет.';
+        if (loader) loader.textContent = '⚠️ Loading error. Check internet.';
     }
 
     isLoading = false;
@@ -559,7 +559,7 @@ function renderGames() {
     }
 
     if (list.length === 0 && !isLoading) {
-        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;">Пока пусто...</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;">Empty for now...</div>';
         return;
     }
 
@@ -568,10 +568,10 @@ function renderGames() {
 
         const topRightBtn = currentTab === 'my' 
             ? `<button class="del-btn" onclick="removeGame('${game.id}')">✕</button>` 
-            : `<button class="fav-btn" onclick="saveToMy('${game.id}')">★ В мои</button>`;
+            : `<button class="fav-btn" onclick="saveToMy('${game.id}')">★ Add to Favorites</button>`;
         
         const customImgBtn = currentTab === 'my' 
-            ? `<button class="img-edit-btn" onclick="pickGameImage('${game.id}')">🖼 Фото</button>` : '';
+            ? `<button class="img-edit-btn" onclick="pickGameImage('${game.id}')">🖼 Photo</button>` : '';
             
         const poster = makePoster(game.name, game.c1 || '#1e40af', game.c2 || '#0f172a');
         const imgSrc = game.img ? game.img : poster;
@@ -621,7 +621,7 @@ async function updateOnlineCounts() {
 
             allGames.forEach(g => {
                 if (g.universeId && infoMap[g.universeId] !== undefined) {
-                    g.playing = Number(infoMap[g.universeId]).toLocaleString('ru-RU') + ' в игре';
+                    g.playing = Number(infoMap[g.universeId]).toLocaleString('en-US') + ' playing';
                 }
             });
         }
@@ -657,7 +657,7 @@ function saveToMy(id) {
         myGames.unshift(game);
         localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
     }
-    document.getElementById('status').textContent = `«${game.name}» добавлена!`;
+    document.getElementById('status').textContent = `"${game.name}" added!`;
     setTimeout(() => document.getElementById('status').textContent = '', 2000);
 }
 
@@ -674,12 +674,12 @@ async function addGameById() {
     const match = input.value.match(/\d+/);
     
     if (!match) {
-        status.textContent = 'Вставь ID игры!';
+        status.textContent = 'Paste Game ID!';
         return;
     }
     
     const placeId = match[0];
-    status.textContent = 'Ищу...';
+    status.textContent = 'Searching...';
     let gameName = '', imgUrl = '', gamePlaying = '', uid = '';
 
     const uData = await fetchRobloxGet(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
@@ -692,7 +692,7 @@ async function addGameById() {
         
         if (infoData && infoData.data && infoData.data.length > 0) {
             gameName = infoData.data[0].name;
-            gamePlaying = Number(infoData.data[0].playing).toLocaleString('ru-RU') + ' в игре';
+            gamePlaying = Number(infoData.data[0].playing).toLocaleString('en-US') + ' playing';
         }
         
         if (thumbData && thumbData.data && thumbData.data.length > 0 && thumbData.data[0].thumbnails && thumbData.data[0].thumbnails.length > 0) {
@@ -702,7 +702,7 @@ async function addGameById() {
 
     if (!gameName) {
         status.textContent = '';
-        gameName = prompt('Введи название для игры (ID: ' + placeId + '):', 'Моя игра #' + placeId);
+        gameName = prompt('Enter a name for the game (ID: ' + placeId + '):', 'My game #' + placeId);
         if (!gameName) return;
         gamePlaying = 'ID: ' + placeId;
     }
@@ -719,7 +719,7 @@ async function addGameById() {
     
     localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
     input.value = '';
-    status.textContent = 'Добавлено!';
+    status.textContent = 'Added!';
     switchTab('my');
     setTimeout(() => status.textContent = '', 2000);
 }
