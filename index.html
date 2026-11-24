@@ -70,12 +70,7 @@
             cursor: pointer;
             position: relative;
         }
-        .avatar-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
+        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .username-text { font-weight: bold; font-size: 15px; color: #ffffff; }
         .user-sub { font-size: 11px; color: #4ade80; }
         .login-input {
@@ -227,6 +222,15 @@
             font-size: 14px;
         }
         .play-btn:hover { background: #ffe066; }
+
+        /* Стили для индикатора загрузки */
+        .loader {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            color: #93c5fd;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -250,6 +254,7 @@
     </div>
 
     <div class="games-grid" id="gamesGrid"></div>
+    <div id="loader" class="loader" style="display:none;">Загрузка игр...</div>
 </div>
 
 <input type="file" id="filePicker" accept="image/*" style="display:none">
@@ -260,7 +265,7 @@ window.onerror = function(msg) {
     console.error("Ошибка JS:", msg);
 };
 
-// Безопасное чтение localStorage (чтобы старый кэш не ломал сайт)
+// Безопасное чтение localStorage
 function safeParse(key, fallback) {
     try {
         const val = localStorage.getItem(key);
@@ -278,7 +283,7 @@ function escapeHTML(str) {
     );
 }
 
-// Генератор заглушек (работает мгновенно)
+// Генератор заглушек
 function makePoster(title, color1 = '#1e40af', color2 = '#0f172a') {
     const cleanTitle = escapeHTML(String(title || 'Roblox'));
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="432" viewBox="0 0 768 432">
@@ -313,7 +318,7 @@ async function fetchRobloxGet(url) {
     for (const pUrl of tryUrls) {
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 5000);
+            const timer = setTimeout(() => controller.abort(), 8000);
             const res = await fetch(pUrl, { signal: controller.signal });
             clearTimeout(timer);
             if (res.ok) {
@@ -413,46 +418,97 @@ function logoutUser() {
 }
 
 // ==========================================
-// КАТАЛОГ
+// КАТАЛОГ С АВТОЗАГРУЗКОЙ
 // ==========================================
-let discoverGames = [
-    { id: '2753915549',  universeId: '994732206',   name: 'Blox Fruits',                playing: 'Популярное', c1: '#1d4ed8', c2: '#0f172a', img: '' },
-    { id: '4924922222',  universeId: '1686885941',  name: 'Brookhaven 🏡RP',            playing: 'Популярное', c1: '#0369a1', c2: '#0f172a', img: '' },
-    { id: '189707',      universeId: '65033',       name: 'Natural Disaster Survival',  playing: 'Классика',   c1: '#b45309', c2: '#0f172a', img: '' },
-    { id: '920587237',   universeId: '383310974',   name: 'Adopt Me!',                  playing: 'Популярное', c1: '#be185d', c2: '#0f172a', img: '' },
-    { id: '142823291',   universeId: '66654135',    name: 'Murder Mystery 2',           playing: 'Экшен',      c1: '#991b1b', c2: '#0f172a', img: '' },
-    { id: '6516141723',  universeId: '2440500124',  name: 'DOORS 👁️',                   playing: 'Хоррор',     c1: '#4c1d95', c2: '#090d16', img: '' },
-    { id: '286090429',   universeId: '111958650',   name: 'Arsenal',                    playing: 'Шутер',      c1: '#c2410c', c2: '#0f172a', img: '' },
-    { id: '13772394625', universeId: '4777817887',  name: 'Blade Ball',                 playing: 'Экшен',      c1: '#6d28d9', c2: '#0f172a', img: '' }
-];
-
-let currentTab = 'discover';
+let discoverGames = [];
 let myGames = safeParse('myRobloxGames', []);
+let currentTab = 'discover';
+let isLoading = false;
+let nextPageToken = null;
+let currentSortId = 'top-trending'; // Можно поменять на 'top-playing-now', 'up-and-coming'
 
-async function refreshLiveThumbnails() {
-    const uids = discoverGames.map(g => g.universeId).join(',');
-    const [thumbData, infoData] = await Promise.all([
-        fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uids}&size=768x432&format=Png&isCircular=false`),
-        fetchRobloxGet(`https://games.roblox.com/v1/games?universeIds=${uids}`)
-    ]);
+// Получение игр с серверов Roblox
+async function fetchGamesFromRoblox(reset = false) {
+    if (isLoading) return;
+    isLoading = true;
+    
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'block';
 
+    // Генерируем случайный sessionId (как делает сам Roblox)
+    const sessionId = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+
+    let url = `https://apis.roblox.com/explore-api/v1/get-sort-content?urlLocale=en_us&device=computer&country=all&sessionId=${sessionId}&sortId=${currentSortId}`;
+    if (!reset && nextPageToken) {
+        url += `&pageToken=${nextPageToken}`;
+    }
+
+    const data = await fetchRobloxGet(url);
+
+    if (data && data.games) {
+        if (reset) {
+            discoverGames = [];
+            nextPageToken = null;
+        }
+
+        // Обрабатываем новую партию игр
+        const newGames = data.games.map(g => ({
+            id: String(g.rootPlaceId || g.placeId || g.id || ''),
+            universeId: String(g.universeId || g.id || ''),
+            name: g.name || 'Unknown',
+            playing: g.playerCount ? `${Number(g.playerCount).toLocaleString('ru-RU')} в игре` : 'Roblox',
+            c1: '#1e40af', // Цвета для заглушек
+            c2: '#0f172a',
+            img: ''
+        })).filter(g => g.id && g.universeId); // Фильтруем пустые ID
+
+        // Убираем дубликаты
+        const existingIds = new Set(discoverGames.map(g => g.id));
+        const uniqueNewGames = newGames.filter(g => !existingIds.has(g.id));
+
+        discoverGames.push(...uniqueNewGames);
+        nextPageToken = data.nextPageToken || null;
+
+        // Если игр больше нет - скрываем загрузчик
+        if (!nextPageToken) {
+            if (loader) loader.innerHTML = 'Больше игр нет :(';
+            setTimeout(() => { if (loader) loader.style.display = 'none'; }, 2000);
+        }
+
+        renderGames();
+        // Подгружаем обложки для новых игр
+        if (uniqueNewGames.length > 0) {
+            loadThumbnailsForNewGames(uniqueNewGames);
+        }
+    } else {
+        if (loader) loader.textContent = 'Не удалось загрузить игры. Попробуйте позже.';
+    }
+
+    isLoading = false;
+    if (loader && nextPageToken) loader.style.display = 'none';
+}
+
+// Подгрузка обложек для новой партии игр
+async function loadThumbnailsForNewGames(games) {
+    const uids = games.map(g => g.universeId).join(',');
+    if (!uids) return;
+
+    const thumbData = await fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uids}&size=768x432&format=Png&isCircular=false`);
     if (thumbData && thumbData.data) {
         const map = {};
         thumbData.data.forEach(t => {
-            const uid = t.targetId || t.universeId;
+            const uid = String(t.targetId || t.universeId || '');
             if (t.thumbnails && t.thumbnails.length > 0) map[uid] = t.thumbnails[0].imageUrl;
         });
-        discoverGames.forEach(g => { if (map[g.universeId]) g.img = map[g.universeId]; });
-    }
 
-    if (infoData && infoData.data) {
-        const infoMap = {};
-        infoData.data.forEach(i => { infoMap[i.id] = i.playing; });
         discoverGames.forEach(g => {
-            if (infoMap[g.universeId]) g.playing = Number(infoMap[g.universeId]).toLocaleString('ru-RU') + ' в игре';
+            if (map[g.universeId]) g.img = map[g.universeId];
         });
+        renderGames(); // Перерисовываем, чтобы показать картинки
     }
-    renderGames();
 }
 
 function renderGames() {
@@ -463,7 +519,7 @@ function renderGames() {
     grid.innerHTML = '';
     const list = currentTab === 'discover' ? discoverGames : myGames;
     
-    if (list.length === 0) {
+    if (list.length === 0 && !isLoading) {
         grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;">Пока пусто...</div>';
         return;
     }
@@ -494,6 +550,16 @@ function renderGames() {
         </div>`;
     });
 }
+
+// Бесконечная прокрутка
+window.addEventListener('scroll', () => {
+    if (currentTab !== 'discover' || isLoading || !nextPageToken) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    if (scrollTop + clientHeight >= scrollHeight - 500) { // За 500px до конца
+        fetchGamesFromRoblox();
+    }
+});
 
 function pickGameImage(index) {
     const picker = document.getElementById('filePicker');
@@ -577,8 +643,10 @@ function removeGame(index) {
 
 // ЗАПУСК
 renderProfile();
-renderGames();
-refreshLiveThumbnails();
+renderGames(); // Сначала рисуем пустой экран
+
+// Загружаем первую партию игр
+fetchGamesFromRoblox(true);
 </script>
 </body>
 </html>
