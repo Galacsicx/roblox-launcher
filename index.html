@@ -478,7 +478,7 @@ async function fetchGamesFromRoblox(reset = false) {
         return v.toString(16);
     });
 
-    let url = `https://apis.roblox.com/explore-api/v1/get-sort-content?urlLocale=en_us&device=computer&country=all&sessionId=${sessionId}&sortId=${currentSortId}`;
+    let url = `https://apis.roblox.com/explore-api/v1/get-sort-content?urlLocale=en_us&device=computer&country=us&sessionId=${sessionId}&sortId=${currentSortId}`;
     if (!reset && nextPageToken) url += `&pageToken=${nextPageToken}`;
 
     const data = await fetchRobloxGet(url);
@@ -495,7 +495,7 @@ async function fetchGamesFromRoblox(reset = false) {
             name: g.name || 'Unknown',
             playing: g.playerCount ? `${Number(g.playerCount).toLocaleString('en-US')} playing` : 'Roblox',
             c1: '#1e40af', c2: '#0f172a', img: ''
-        })).filter(g => g.id && g.universeId);
+        })).filter(g => g.id && g.universeId && !/[а-яА-ЯёЁ]/.test(g.name));
 
         const existingIds = new Set(discoverGames.map(g => g.id));
         const uniqueNewGames = newGames.filter(g => !existingIds.has(g.id));
