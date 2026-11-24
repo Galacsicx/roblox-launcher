@@ -405,16 +405,14 @@ function logoutUser() {
 }
 
 // ==========================================
-// КАТАЛОГ С ОКНОМ РЕНДЕРА (ВИРТУАЛИЗАЦИЯ)
+// КАТАЛОГ С ОКНОМ РЕНДЕРА И ОНЛАЙНОМ
 // ==========================================
-let discoverGames = []; // Тут храним ВСЕ загруженные игры
+let discoverGames = [];
 let myGames = safeParse('myRobloxGames', []);
 let currentTab = 'discover';
 let isLoading = false;
 let nextPageToken = null;
 let currentSortId = 'top-trending';
-
-// Настройка: сколько игр максимум держать на странице (5 столбцов по 4-5 строк = ~20-25 игр)
 const MAX_VISIBLE_GAMES = 20; 
 
 async function fetchGamesFromRoblox(reset = false) {
@@ -454,7 +452,6 @@ async function fetchGamesFromRoblox(reset = false) {
         discoverGames.push(...uniqueNewGames);
         nextPageToken = data.nextPageToken || null;
 
-        // Если пришла пачка дубликатов, а токен есть - грузим следующую
         if (uniqueNewGames.length === 0 && nextPageToken) {
             isLoading = false;
             if (loader) loader.style.display = 'none';
@@ -492,24 +489,20 @@ async function loadThumbnailsForNewGames(games) {
         });
 
         discoverGames.forEach(g => { if (map[g.universeId]) g.img = map[g.universeId]; });
-        renderGames(); // Обновляем карточки с новыми картинками
+        renderGames();
     }
 }
 
-// Ограничиваем список и сохраняем позицию скролла
 function renderGames() {
     const grid = document.getElementById('gamesGrid');
     if (!grid) return;
     
-    // Запоминаем текущую высоту страницы перед перерисовкой
     const oldHeight = document.documentElement.scrollHeight;
-
     const filterText = document.getElementById('searchInput').value.toLowerCase();
     grid.innerHTML = '';
     
     let list = currentTab === 'discover' ? discoverGames : myGames;
     
-    // ВОТ ТУТ МАГИЯ ОКНА: если игр больше MAX_VISIBLE, оставляем только последние
     if (currentTab === 'discover' && !filterText && list.length > MAX_VISIBLE_GAMES) {
         list = list.slice(list.length - MAX_VISIBLE_GAMES);
     }
@@ -522,7 +515,6 @@ function renderGames() {
     list.forEach((game) => {
         if (filterText && !game.name.toLowerCase().includes(filterText) && !String(game.id).includes(filterText)) return;
 
-        // Используем ID игры вместо индекса, чтобы кнопки работали правильно при удалении верхних карточек
         const topRightBtn = currentTab === 'my' 
             ? `<button class="del-btn" onclick="removeGame('${game.id}')">✕</button>` 
             : `<button class="fav-btn" onclick="saveToMy('${game.id}')">★ В мои</button>`;
@@ -546,10 +538,8 @@ function renderGames() {
         </div>`;
     });
 
-    // Корректируем скролл, если мы удалили верхние карточки
     const newHeight = document.documentElement.scrollHeight;
     if (newHeight < oldHeight) {
-        // Прокручиваем страницу вверх ровно на столько, на сколько она уменьшилась
         window.scrollBy(0, newHeight - oldHeight); 
     }
 }
@@ -557,12 +547,52 @@ function renderGames() {
 // Скролл для подгрузки
 window.addEventListener('scroll', () => {
     if (currentTab !== 'discover' || isLoading || !nextPageToken) return;
-    // Если до конца страницы осталось 600 пикселей
     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
         fetchGamesFromRoblox();
     }
 });
 
+// ==========================================
+// ОБНОВЛЕНИЕ ОНЛАЙНА КАЖДУЮ МИНУТУ
+// ==========================================
+async function updateOnlineCounts() {
+    // Берем все игры (и популярные, и добавленные)
+    const allGames = [...discoverGames, ...myGames];
+    // Оставляем только те, у которых есть universeId (без него API не выдаст онлайн)
+    const uniqueUniverseIds = [...new Set(allGames.map(g => g.universeId).filter(id => id))];
+
+    if (uniqueUniverseIds.length === 0) return;
+
+    // Делим на куски по 50 штук, чтобы не перегрузить API
+    const chunkSize = 50;
+    for (let i = 0; i < uniqueUniverseIds.length; i += chunkSize) {
+        const chunk = uniqueUniverseIds.slice(i, i + chunkSize).join(',');
+        const data = await fetchRobloxGet(`https://games.roblox.com/v1/games?universeIds=${chunk}`);
+        
+        if (data && data.data) {
+            const infoMap = {};
+            data.data.forEach(item => {
+                infoMap[item.id] = item.playing;
+            });
+
+            // Обновляем цифры в массивах
+            allGames.forEach(g => {
+                if (g.universeId && infoMap[g.universeId] !== undefined) {
+                    g.playing = Number(infoMap[g.universeId]).toLocaleString('ru-RU') + ' в игре';
+                }
+            });
+        }
+    }
+    // Перерисовываем, чтобы показать новые цифры
+    renderGames();
+}
+
+// Запускаем обновление каждые 60 секунд
+setInterval(updateOnlineCounts, 60000);
+
+// ==========================================
+// КНОПКИ И ИГРЫ
+// ==========================================
 function pickGameImage(id) {
     const picker = document.getElementById('filePicker');
     picker.onchange = (e) => {
@@ -604,20 +634,30 @@ async function addGameById() {
     const input = document.getElementById('searchInput');
     const status = document.getElementById('status');
     const match = input.value.match(/\d+/);
-    if (!match) { status.textContent = 'Вставь ID игры!'; return; }
+    
+    if (!match) {
+        status.textContent = 'Вставь ID игры!';
+        return;
+    }
     
     const placeId = match[0];
     status.textContent = 'Ищу...';
-    let gameName = '', imgUrl = '';
+    let gameName = '', imgUrl = '', gamePlaying = '', uid = '';
 
     const uData = await fetchRobloxGet(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
     if (uData && uData.universeId) {
-        const uid = uData.universeId;
+        uid = uData.universeId; // Обязательно сохраняем universeId для обновления онлайна
         const [infoData, thumbData] = await Promise.all([
             fetchRobloxGet(`https://games.roblox.com/v1/games?universeIds=${uid}`),
             fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uid}&size=768x432&format=Png&isCircular=false`)
         ]);
-        if (infoData && infoData.data && infoData.data.length > 0) gameName = infoData.data[0].name;
+        
+        if (infoData && infoData.data && infoData.data.length > 0) {
+            gameName = infoData.data[0].name;
+            // Берем реальный онлайн вместо ID
+            gamePlaying = Number(infoData.data[0].playing).toLocaleString('ru-RU') + ' в игре';
+        }
+        
         if (thumbData && thumbData.data && thumbData.data.length > 0 && thumbData.data[0].thumbnails && thumbData.data[0].thumbnails.length > 0) {
             imgUrl = thumbData.data[0].thumbnails[0].imageUrl;
         }
@@ -625,11 +665,21 @@ async function addGameById() {
 
     if (!gameName) {
         status.textContent = '';
-        gameName = prompt('Введи название для игры:', 'Моя игра #' + placeId);
+        gameName = prompt('Введи название для игры (ID: ' + placeId + '):', 'Моя игра #' + placeId);
         if (!gameName) return;
+        gamePlaying = 'ID: ' + placeId; // Если не удалось найти, показываем ID
     }
 
-    myGames.unshift({ id: placeId, name: gameName, playing: 'ID: ' + placeId, c1: '#1e40af', c2: '#0f172a', img: imgUrl });
+    myGames.unshift({ 
+        id: placeId, 
+        universeId: uid, 
+        name: gameName, 
+        playing: gamePlaying, // Сохраняем онлайн
+        c1: '#1e40af', 
+        c2: '#0f172a', 
+        img: imgUrl 
+    });
+    
     localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
     input.value = '';
     status.textContent = 'Добавлено!';
