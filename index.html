@@ -223,13 +223,13 @@
         }
         .play-btn:hover { background: #ffe066; }
 
-        /* Стили для индикатора загрузки */
-        .loader {
+        .loader-container {
             grid-column: 1 / -1;
             text-align: center;
-            padding: 20px;
+            padding: 30px;
             color: #93c5fd;
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -254,26 +254,20 @@
     </div>
 
     <div class="games-grid" id="gamesGrid"></div>
-    <div id="loader" class="loader" style="display:none;">Загрузка игр...</div>
+    <div id="loader" class="loader-container" style="display:none;">⏳ Загрузка новых игр...</div>
 </div>
 
 <input type="file" id="filePicker" accept="image/*" style="display:none">
 
 <script>
-// Защита от падения скрипта
-window.onerror = function(msg) {
-    console.error("Ошибка JS:", msg);
-};
+window.onerror = function(msg) { console.error("Ошибка JS:", msg); };
 
-// Безопасное чтение localStorage
 function safeParse(key, fallback) {
     try {
         const val = localStorage.getItem(key);
         if (!val || val === 'undefined' || val === 'null') return fallback;
         return JSON.parse(val) || fallback;
-    } catch (e) {
-        return fallback;
-    }
+    } catch (e) { return fallback; }
 }
 
 function escapeHTML(str) {
@@ -283,7 +277,6 @@ function escapeHTML(str) {
     );
 }
 
-// Генератор заглушек
 function makePoster(title, color1 = '#1e40af', color2 = '#0f172a') {
     const cleanTitle = escapeHTML(String(title || 'Roblox'));
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="432" viewBox="0 0 768 432">
@@ -311,10 +304,7 @@ function toRoProxy(url) {
 }
 
 async function fetchRobloxGet(url) {
-    const tryUrls = [
-        toRoProxy(url),
-        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
-    ];
+    const tryUrls = [toRoProxy(url), 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)];
     for (const pUrl of tryUrls) {
         try {
             const controller = new AbortController();
@@ -375,7 +365,6 @@ async function loginUser() {
     const input = document.getElementById('usernameInput');
     const rawQuery = input.value.replace('@', '').trim();
     if (!rawQuery) return;
-    
     input.disabled = true;
     input.value = 'Ищу...';
 
@@ -401,9 +390,7 @@ async function loginUser() {
 
     if (userId) {
         const thumbData = await fetchRobloxGet(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`);
-        if (thumbData && thumbData.data && thumbData.data.length > 0) {
-            avatarUrl = thumbData.data[0].imageUrl || '';
-        }
+        if (thumbData && thumbData.data && thumbData.data.length > 0) avatarUrl = thumbData.data[0].imageUrl || '';
     }
 
     savedUser = { id: userId, name: realName, displayName: displayName, avatar: avatarUrl };
@@ -418,16 +405,18 @@ function logoutUser() {
 }
 
 // ==========================================
-// КАТАЛОГ С АВТОЗАГРУЗКОЙ
+// КАТАЛОГ С ОКНОМ РЕНДЕРА (ВИРТУАЛИЗАЦИЯ)
 // ==========================================
-let discoverGames = [];
+let discoverGames = []; // Тут храним ВСЕ загруженные игры
 let myGames = safeParse('myRobloxGames', []);
 let currentTab = 'discover';
 let isLoading = false;
 let nextPageToken = null;
-let currentSortId = 'top-trending'; // Можно поменять на 'top-playing-now', 'up-and-coming'
+let currentSortId = 'top-trending';
 
-// Получение игр с серверов Roblox
+// Настройка: сколько игр максимум держать на странице (5 столбцов по 4-5 строк = ~20-25 игр)
+const MAX_VISIBLE_GAMES = 20; 
+
 async function fetchGamesFromRoblox(reset = false) {
     if (isLoading) return;
     isLoading = true;
@@ -435,16 +424,13 @@ async function fetchGamesFromRoblox(reset = false) {
     const loader = document.getElementById('loader');
     if (loader) loader.style.display = 'block';
 
-    // Генерируем случайный sessionId (как делает сам Roblox)
     const sessionId = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 
     let url = `https://apis.roblox.com/explore-api/v1/get-sort-content?urlLocale=en_us&device=computer&country=all&sessionId=${sessionId}&sortId=${currentSortId}`;
-    if (!reset && nextPageToken) {
-        url += `&pageToken=${nextPageToken}`;
-    }
+    if (!reset && nextPageToken) url += `&pageToken=${nextPageToken}`;
 
     const data = await fetchRobloxGet(url);
 
@@ -454,44 +440,45 @@ async function fetchGamesFromRoblox(reset = false) {
             nextPageToken = null;
         }
 
-        // Обрабатываем новую партию игр
         const newGames = data.games.map(g => ({
             id: String(g.rootPlaceId || g.placeId || g.id || ''),
             universeId: String(g.universeId || g.id || ''),
             name: g.name || 'Unknown',
             playing: g.playerCount ? `${Number(g.playerCount).toLocaleString('ru-RU')} в игре` : 'Roblox',
-            c1: '#1e40af', // Цвета для заглушек
-            c2: '#0f172a',
-            img: ''
-        })).filter(g => g.id && g.universeId); // Фильтруем пустые ID
+            c1: '#1e40af', c2: '#0f172a', img: ''
+        })).filter(g => g.id && g.universeId);
 
-        // Убираем дубликаты
         const existingIds = new Set(discoverGames.map(g => g.id));
         const uniqueNewGames = newGames.filter(g => !existingIds.has(g.id));
 
         discoverGames.push(...uniqueNewGames);
         nextPageToken = data.nextPageToken || null;
 
-        // Если игр больше нет - скрываем загрузчик
+        // Если пришла пачка дубликатов, а токен есть - грузим следующую
+        if (uniqueNewGames.length === 0 && nextPageToken) {
+            isLoading = false;
+            if (loader) loader.style.display = 'none';
+            return fetchGamesFromRoblox(); 
+        }
+
         if (!nextPageToken) {
-            if (loader) loader.innerHTML = 'Больше игр нет :(';
+            if (loader) loader.innerHTML = '🎉 Это все игры на сегодня!';
             setTimeout(() => { if (loader) loader.style.display = 'none'; }, 2000);
         }
 
         renderGames();
-        // Подгружаем обложки для новых игр
+        
         if (uniqueNewGames.length > 0) {
             loadThumbnailsForNewGames(uniqueNewGames);
         }
     } else {
-        if (loader) loader.textContent = 'Не удалось загрузить игры. Попробуйте позже.';
+        if (loader) loader.textContent = '⚠️ Ошибка загрузки. Проверь интернет.';
     }
 
     isLoading = false;
     if (loader && nextPageToken) loader.style.display = 'none';
 }
 
-// Подгрузка обложек для новой партии игр
 async function loadThumbnailsForNewGames(games) {
     const uids = games.map(g => g.universeId).join(',');
     if (!uids) return;
@@ -504,35 +491,44 @@ async function loadThumbnailsForNewGames(games) {
             if (t.thumbnails && t.thumbnails.length > 0) map[uid] = t.thumbnails[0].imageUrl;
         });
 
-        discoverGames.forEach(g => {
-            if (map[g.universeId]) g.img = map[g.universeId];
-        });
-        renderGames(); // Перерисовываем, чтобы показать картинки
+        discoverGames.forEach(g => { if (map[g.universeId]) g.img = map[g.universeId]; });
+        renderGames(); // Обновляем карточки с новыми картинками
     }
 }
 
+// Ограничиваем список и сохраняем позицию скролла
 function renderGames() {
     const grid = document.getElementById('gamesGrid');
     if (!grid) return;
     
+    // Запоминаем текущую высоту страницы перед перерисовкой
+    const oldHeight = document.documentElement.scrollHeight;
+
     const filterText = document.getElementById('searchInput').value.toLowerCase();
     grid.innerHTML = '';
-    const list = currentTab === 'discover' ? discoverGames : myGames;
     
+    let list = currentTab === 'discover' ? discoverGames : myGames;
+    
+    // ВОТ ТУТ МАГИЯ ОКНА: если игр больше MAX_VISIBLE, оставляем только последние
+    if (currentTab === 'discover' && !filterText && list.length > MAX_VISIBLE_GAMES) {
+        list = list.slice(list.length - MAX_VISIBLE_GAMES);
+    }
+
     if (list.length === 0 && !isLoading) {
         grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;">Пока пусто...</div>';
         return;
     }
 
-    list.forEach((game, index) => {
+    list.forEach((game) => {
         if (filterText && !game.name.toLowerCase().includes(filterText) && !String(game.id).includes(filterText)) return;
 
+        // Используем ID игры вместо индекса, чтобы кнопки работали правильно при удалении верхних карточек
         const topRightBtn = currentTab === 'my' 
-            ? `<button class="del-btn" onclick="removeGame(${index})">✕</button>` 
-            : `<button class="fav-btn" onclick="saveToMy(${index})">★ В мои</button>`;
+            ? `<button class="del-btn" onclick="removeGame('${game.id}')">✕</button>` 
+            : `<button class="fav-btn" onclick="saveToMy('${game.id}')">★ В мои</button>`;
         
         const customImgBtn = currentTab === 'my' 
-            ? `<button class="img-edit-btn" onclick="pickGameImage(${index})">🖼 Фото</button>` : '';
+            ? `<button class="img-edit-btn" onclick="pickGameImage('${game.id}')">🖼 Фото</button>` : '';
             
         const poster = makePoster(game.name, game.c1 || '#1e40af', game.c2 || '#0f172a');
         const imgSrc = game.img ? game.img : poster;
@@ -549,37 +545,47 @@ function renderGames() {
             </div>
         </div>`;
     });
+
+    // Корректируем скролл, если мы удалили верхние карточки
+    const newHeight = document.documentElement.scrollHeight;
+    if (newHeight < oldHeight) {
+        // Прокручиваем страницу вверх ровно на столько, на сколько она уменьшилась
+        window.scrollBy(0, newHeight - oldHeight); 
+    }
 }
 
-// Бесконечная прокрутка
+// Скролл для подгрузки
 window.addEventListener('scroll', () => {
     if (currentTab !== 'discover' || isLoading || !nextPageToken) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-    if (scrollTop + clientHeight >= scrollHeight - 500) { // За 500px до конца
+    // Если до конца страницы осталось 600 пикселей
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
         fetchGamesFromRoblox();
     }
 });
 
-function pickGameImage(index) {
+function pickGameImage(id) {
     const picker = document.getElementById('filePicker');
     picker.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-            myGames[index].img = reader.result;
-            localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
-            renderGames();
+            const game = myGames.find(g => g.id === id);
+            if (game) {
+                game.img = reader.result;
+                localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
+                renderGames();
+            }
         };
         reader.readAsDataURL(file);
     };
     picker.click();
 }
 
-function saveToMy(index) {
-    const game = { ...discoverGames[index] };
-    if (!myGames.some(g => g.id === game.id)) {
+function saveToMy(id) {
+    const game = discoverGames.find(g => g.id === id);
+    if (!game) return;
+    if (!myGames.some(g => g.id === id)) {
         myGames.unshift(game);
         localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
     }
@@ -598,11 +604,7 @@ async function addGameById() {
     const input = document.getElementById('searchInput');
     const status = document.getElementById('status');
     const match = input.value.match(/\d+/);
-    
-    if (!match) {
-        status.textContent = 'Вставь ID игры!';
-        return;
-    }
+    if (!match) { status.textContent = 'Вставь ID игры!'; return; }
     
     const placeId = match[0];
     status.textContent = 'Ищу...';
@@ -635,17 +637,15 @@ async function addGameById() {
     setTimeout(() => status.textContent = '', 2000);
 }
 
-function removeGame(index) {
-    myGames.splice(index, 1);
+function removeGame(id) {
+    myGames = myGames.filter(g => g.id !== id);
     localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
     renderGames();
 }
 
 // ЗАПУСК
 renderProfile();
-renderGames(); // Сначала рисуем пустой экран
-
-// Загружаем первую партию игр
+renderGames();
 fetchGamesFromRoblox(true);
 </script>
 </body>
