@@ -12,8 +12,8 @@
         button { background: #13294d; border: 1px solid #3562ad; color: #b8d0fa; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button.active, .btn-blue { background: #3b82f6; color: #fff; border-color: #60a5fa; }
         input { background: #0d1b36; border: 1px solid #3b6ec2; color: #fff; padding: 8px 12px; border-radius: 6px; outline: none; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #2563eb; border: 2px solid #4ade80; overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
-        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar { width: 42px; height: 42px; border-radius: 50%; background: #2563eb; border: 2px solid #4ade80; overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; flex-shrink: 0; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
         .card { background: #122647; border: 1px solid #264882; border-radius: 8px; overflow: hidden; transition: 0.2s; }
         .card:hover { transform: translateY(-3px); }
@@ -54,9 +54,6 @@
         `<svg xmlns="http://w3.org" width="600" height="340"><rect width="100%" height="100%" fill="${c}"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" fill="#fff" font-family="Segoe UI,Arial" font-weight="bold" font-size="32">${t.replace(/[<>&'"]/g,'')}</text></svg>`
     );
 
-    // Пробуем грузить картинку напрямую (через твой hosts), если не выйдет — через wsrv.nl
-    const pImg = u => !u || u.startsWith('data:') ? u : u;
-
     async function api(url) {
         const list = [
             url.replace('roblox.com', 'roproxy.com'),
@@ -78,12 +75,16 @@
     let disc = [
         { id: '2753915549', uid: '994732206', name: 'Blox Fruits', tag: 'Топ', c: '#1d4ed8', img: '' },
         { id: '4924922222', uid: '1686885941', name: 'Brookhaven RP', tag: 'Топ', c: '#0369a1', img: '' },
-        { id: '189707', uid: '65033', name: 'Natural Disaster', tag: 'Классика', c: '#b45309', img: '' },
+        { id: '189707', uid: '65033', name: 'Natural Disaster Survival', tag: 'Классика', c: '#b45309', img: '' },
         { id: '920587237', uid: '383310974', name: 'Adopt Me!', tag: 'Топ', c: '#be185d', img: '' },
         { id: '142823291', uid: '66654135', name: 'Murder Mystery 2', tag: 'Экшен', c: '#991b1b', img: '' },
         { id: '6516141723', uid: '2440500124', name: 'DOORS', tag: 'Хоррор', c: '#4c1d95', img: '' },
         { id: '286090429', uid: '111958650', name: 'Arsenal', tag: 'Шутер', c: '#c2410c', img: '' },
-        { id: '13772394625', uid: '4777817887', name: 'Blade Ball', tag: 'Экшен', c: '#6d28d9', img: '' }
+        { id: '13772394625', uid: '4777817887', name: 'Blade Ball', tag: 'Экшен', c: '#6d28d9', img: '' },
+        { id: '155615604', uid: '73885730', name: 'Prison Life', tag: 'Классика', c: '#374151', img: '' },
+        { id: '6872265039', uid: '2619619496', name: 'BedWars', tag: 'PvP', c: '#047857', img: '' },
+        { id: '537413528', uid: '210851291', name: 'Build A Boat For Treasure', tag: 'Приключения', c: '#0f766e', img: '' },
+        { id: '3956818381', uid: '1335695570', name: 'Ninja Legends', tag: 'Симулятор', c: '#4338ca', img: '' }
     ];
 
     function drawProf() {
@@ -92,9 +93,15 @@
             el.innerHTML = `<input id="uIn" placeholder="Ник или User ID" onkeydown="if(event.key==='Enter')login()"><button class="btn-blue" onclick="login()">Войти</button>`;
             return;
         }
+        const fallbackAv = user.img ? `https://wsrv.nl{encodeURIComponent(user.img)}` : '';
         el.innerHTML = `
-            <div class="avatar" onclick="pickImg(-1)" title="Сменить фото">${user.img ? `<img src="${user.img}" onerror="this.src='https://wsrv.nl('${user.img}')">` : user.name.at(0).toUpperCase()}</div>
-            <div><b>@${user.name}</b><div style="font-size:11px;color:#4ade80;">● ${user.id || 'В сети'}</div></div>
+            <div class="avatar" onclick="pickImg(-1)" title="Нажми, чтобы сменить фото">
+                ${user.img ? `<img src="${user.img}" onerror="if(this.src!=='${fallbackAv}')this.src='${fallbackAv}';else this.remove()">` : user.name.at(0).toUpperCase()}
+            </div>
+            <div>
+                <b>${user.display || user.name}</b> <span style="color:#93c5fd;font-size:12px;">(@${user.name})</span>
+                <div style="font-size:11px;color:#4ade80;">● ${user.id ? 'ID: ' + user.id : 'В сети'}</div>
+            </div>
             <button style="border-color:#ef4444;color:#f87171;padding:4px 8px;font-size:11px;" onclick="user=null;localStorage.removeItem('rbxUser');drawProf()">Выйти</button>`;
     }
 
@@ -102,18 +109,32 @@
         const inp = document.getElementById('uIn');
         const v = inp.value.replace('@', '').trim();
         if (!v) return;
-        inp.disabled = true; inp.value = 'Ищу...';
-        let id = /^\d+$/.test(v) ? v : '', name = v, img = '';
-        if (!id) {
-            const s = await api(`https://roblox.com{encodeURIComponent(v)}&limit=5`);
-            const f = s?.data?.find(u => u.name.toLowerCase() === v.toLowerCase()) || s?.data?.at(0);
-            if (f) { id = f.id; name = f.name; }
+        inp.disabled = true; inp.value = 'Ищу аватар...';
+
+        let id = /^\d+$/.test(v) ? v : '';
+        let name = v;
+        let display = v;
+        let img = '';
+
+        if (id) {
+            const u = await api(`https://roblox.com{id}`);
+            if (u?.name) { name = u.name; display = u.displayName || u.name; }
+        } else {
+            const s = await api(`https://roblox.com{encodeURIComponent(v)}&limit=10`);
+            const f = s?.data?.find(u => u.name.toLowerCase() === v.toLowerCase() || u.displayName.toLowerCase() === v.toLowerCase()) || s?.data?.at(0);
+            if (f) {
+                id = f.id;
+                name = f.name;
+                display = f.displayName || f.name;
+            }
         }
+
         if (id) {
             const t = await api(`https://roblox.com{id}&size=150x150&format=Png&isCircular=false`);
             img = t?.data?.at(0)?.imageUrl || '';
         }
-        user = { id, name, img };
+
+        user = { id, name, display, img };
         localStorage.setItem('rbxUser', JSON.stringify(user));
         drawProf();
     }
