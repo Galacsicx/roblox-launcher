@@ -52,6 +52,7 @@
             padding: 7px 14px;
             border-radius: 8px;
             border: 1px solid #3b6ec2;
+            position: relative;
         }
         .avatar-wrap {
             width: 44px;
@@ -71,6 +72,29 @@
             position: relative;
         }
         .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        .clear-avatar-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            border: 1px solid #13294d;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            padding: 0;
+            line-height: 1;
+        }
+        .clear-avatar-btn:hover { background: #dc2626; }
+
         .username-text { font-weight: bold; font-size: 15px; color: #ffffff; }
         .user-sub { font-size: 11px; color: #4ade80; }
         .login-input {
@@ -325,11 +349,21 @@ let savedUser = safeParse('robloxUserProfile', null);
 function renderProfile() {
     const box = document.getElementById('profileBox');
     if (!box) return;
+    
     if (savedUser) {
+        const activeAvatar = savedUser.customAvatar || savedUser.avatar;
         const letter = (savedUser.displayName || savedUser.name || 'R').charAt(0).toUpperCase();
-        const imgTag = savedUser.avatar ? `<img src="${savedUser.avatar}" onerror="this.remove()" alt="Avatar">` : '';
+        const imgTag = activeAvatar ? `<img src="${activeAvatar}" onerror="this.remove()" alt="Avatar">` : '';
+        
+        const clearBtn = savedUser.customAvatar 
+            ? `<div class="clear-avatar-btn" onclick="event.stopPropagation(); removeCustomAvatar()" title="Вернуть аватар Roblox">✕</div>` 
+            : '';
+
         box.innerHTML = `
-            <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Своя аватарка">${imgTag}${!savedUser.avatar ? letter : ''}</div>
+            <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Нажми, чтобы поставить свою картинку">
+                ${imgTag}${!activeAvatar ? letter : ''}
+                ${clearBtn}
+            </div>
             <div>
                 <div class="username-text">${escapeHTML(savedUser.displayName || savedUser.name)} <span style="color:#93c5fd; font-weight:normal; font-size:12px;">(@${escapeHTML(savedUser.name)})</span></div>
                 <div class="user-sub">● ${savedUser.id ? 'ID: ' + savedUser.id : 'Кликни на кружок'}</div>
@@ -349,13 +383,21 @@ function pickCustomAvatar() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-            savedUser.avatar = reader.result;
+            if (!savedUser) return;
+            savedUser.customAvatar = reader.result;
             localStorage.setItem('robloxUserProfile', JSON.stringify(savedUser));
             renderProfile();
         };
         reader.readAsDataURL(file);
     };
     picker.click();
+}
+
+function removeCustomAvatar() {
+    if (!savedUser) return;
+    delete savedUser.customAvatar;
+    localStorage.setItem('robloxUserProfile', JSON.stringify(savedUser));
+    renderProfile();
 }
 
 async function loginUser() {
@@ -366,6 +408,7 @@ async function loginUser() {
     input.value = 'Ищу...';
 
     let userId = '', realName = rawQuery, displayName = rawQuery, avatarUrl = '';
+    let oldCustomAvatar = savedUser ? savedUser.customAvatar : null;
 
     if (/^\d+$/.test(rawQuery)) {
         userId = rawQuery;
@@ -390,7 +433,14 @@ async function loginUser() {
         if (thumbData && thumbData.data && thumbData.data.length > 0) avatarUrl = thumbData.data[0].imageUrl || '';
     }
 
-    savedUser = { id: userId, name: realName, displayName: displayName, avatar: avatarUrl };
+    savedUser = { 
+        id: userId, 
+        name: realName, 
+        displayName: displayName, 
+        avatar: avatarUrl,
+        customAvatar: oldCustomAvatar 
+    };
+    
     localStorage.setItem('robloxUserProfile', JSON.stringify(savedUser));
     renderProfile();
 }
