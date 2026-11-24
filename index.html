@@ -2,269 +2,583 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Roblox Launcher — Все игры</title>
+    <title>Roblox Launcher Pro</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { margin: 0; background: linear-gradient(135deg, #1b3b6f, #0d1b36); color: #fff; min-height: 100vh; padding: 20px; }
-        .wrap { max-width: 1120px; margin: 0 auto; }
-        .bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: rgba(10,22,46,0.85); border: 1px solid #2e5699; padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; position: sticky; top: 10px; z-index: 10; backdrop-filter: blur(8px); }
-        .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        button { background: #13294d; border: 1px solid #3562ad; color: #b8d0fa; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button.active, .btn-blue { background: #3b82f6; color: #fff; border-color: #60a5fa; }
-        input { background: #0d1b36; border: 1px solid #3b6ec2; color: #fff; padding: 8px 12px; border-radius: 6px; outline: none; }
-        
-        /* Контейнер виртуального списка (как на Sega) */
-        #viewport { position: relative; width: 100%; }
-        #grid { position: absolute; left: 0; right: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-        @media (max-width: 950px) { #grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 700px) { #grid { grid-template-columns: repeat(2, 1fr); } }
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #1b3b6f 0%, #0d1b36 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 30px;
+        }
+        .container { max-width: 1120px; margin: 0 auto; }
 
-        .card { height: 215px; background: #122647; border: 1px solid #264882; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
-        .thumb { position: relative; height: 115px; background: linear-gradient(135deg, #1e3a8a, #0f172a); display: flex; align-items: center; justify-content: center; padding: 10px; text-align: center; }
-        .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-        .thumb-title { color: rgba(255,255,255,0.45); font-weight: bold; font-size: 14px; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-        .tag { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.8); color: #4ade80; font-size: 11px; padding: 3px 7px; border-radius: 4px; font-weight: bold; z-index: 2; }
-        .mini-btn { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.85); color: #facc15; border: 1px solid #facc15; padding: 2px 7px; font-size: 11px; z-index: 2; }
-        .del-btn { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.85); color: #ff6b6b; border: none; padding: 2px 7px; z-index: 2; }
-        .body { padding: 10px 12px; }
-        .title { font-weight: bold; font-size: 14px; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .play { display: block; text-align: center; background: #f5d142; color: #141024; text-decoration: none; font-weight: bold; padding: 8px; border-radius: 5px; font-size: 13px; }
-        .play:hover { background: #ffe066; }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: rgba(10, 22, 46, 0.75);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid #2e5699;
+        }
+        .left-header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .tabs { display: flex; gap: 8px; }
+        .tab-btn {
+            background: #13294d;
+            border: 1px solid #3562ad;
+            color: #b8d0fa;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .tab-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #60a5fa;
+        }
+
+        .profile-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #13294d;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid #3b6ec2;
+        }
+        .avatar-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: 2px solid #4ade80;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+            cursor: pointer;
+            position: relative;
+        }
+        .avatar-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .username-text { font-weight: bold; font-size: 15px; color: #ffffff; }
+        .user-sub { font-size: 11px; color: #4ade80; }
+        .login-input {
+            background: #0d1b36;
+            border: 1px solid #3b6ec2;
+            color: white;
+            padding: 7px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            width: 180px;
+            outline: none;
+        }
+        .small-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .small-btn:hover { background: #2563eb; }
+        .logout-btn {
+            background: transparent;
+            border: 1px solid #ef4444;
+            color: #f87171;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
+        .control-bar {
+            background: rgba(10, 22, 46, 0.75);
+            border: 1px solid #2e5699;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-input {
+            background: #13294d;
+            border: 1px solid #3b6ec2;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+            min-width: 270px;
+        }
+        .add-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .add-btn:hover { background: #2563eb; }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            background: #122647;
+            border: 1px solid #264882;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
+        .thumb-wrap { position: relative; height: 135px; background: #0f1f3d; overflow: hidden; }
+        .thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .badge-online {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.78);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4ade80;
+            font-weight: bold;
+            z-index: 2;
+        }
+        .del-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(0,0,0,0.78);
+            color: #ff6b6b;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 3px 8px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        .fav-btn {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0,0,0,0.78);
+            color: #facc15;
+            border: 1px solid #facc15;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 2px 7px;
+            font-size: 12px;
+            z-index: 2;
+        }
+        .img-edit-btn {
+            position: absolute;
+            bottom: 6px;
+            left: 6px;
+            background: rgba(0,0,0,0.78);
+            color: #93c5fd;
+            border: 1px solid #3b82f6;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 2px 7px;
+            font-size: 11px;
+            z-index: 2;
+        }
+        .card-body { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+        .title { font-weight: bold; font-size: 15px; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .play-btn {
+            display: block;
+            text-align: center;
+            background: #f5d142;
+            color: #141024;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .play-btn:hover { background: #ffe066; }
     </style>
 </head>
 <body>
-<div class="wrap">
-    <div class="bar">
-        <div class="row">
-            <h2 style="margin:0 8px 0 0;">Roblox Launcher</h2>
-            <button id="tDisc" class="active" onclick="setTab('disc')">🔥 Все игры (<span id="cnt">0</span>)</button>
-            <button id="tMy" onclick="setTab('my')">⭐ Мои игры</button>
+
+<div class="container">
+    <div class="top-bar">
+        <div class="left-header">
+            <h2 style="margin:0;">Roblox Launcher</h2>
+            <div class="tabs">
+                <button class="tab-btn active" id="tabDiscover" onclick="switchTab('discover')">🔥 Популярные игры</button>
+                <button class="tab-btn" id="tabMy" onclick="switchTab('my')">⭐ Мои игры</button>
+            </div>
         </div>
-        <div class="row">
-            <input id="q" style="min-width:230px;" placeholder="Поиск игры в Roblox или ID..." onkeydown="if(event.key==='Enter')searchRoblox()" onkeyup="renderVirtual()">
-            <button class="btn-blue" onclick="searchRoblox()">Найти / +ID</button>
-        </div>
+        <div class="profile-box" id="profileBox"></div>
     </div>
 
-    <div id="status" style="color:#93c5fd; margin-bottom:12px; font-size:13px;">Загружаю каталог игр из Roblox...</div>
-    
-    <!-- Виртуальное поле прокрутки -->
-    <div id="viewport">
-        <div id="grid"></div>
+    <div class="control-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Поиск по названию или вставь ID игры..." onkeyup="renderGames()">
+        <button class="add-btn" onclick="addGameById()">+ Добавить игру по ID</button>
+        <span id="status" style="color: #93c5fd; font-size: 13px;"></span>
     </div>
+
+    <div class="games-grid" id="gamesGrid"></div>
 </div>
 
+<input type="file" id="filePicker" accept="image/*" style="display:none">
+
 <script>
-    const H_APIS = 'https://' + '://roblox.com';
-    const H_GAMES = 'https://' + '://roblox.com';
-    const H_THUMB = 'https://' + '://roblox.com';
+// Защита от падения скрипта
+window.onerror = function(msg) {
+    console.error("Ошибка JS:", msg);
+};
 
-    async function api(url) {
-        const list = [
-            url.replace('roblox.com', 'roproxy.com'),
-            'https://allorigins.win' + encodeURIComponent(url),
-            'https://codetabs.com' + encodeURIComponent(url)
-        ];
-        for (const u of list) {
-            try {
-                const r = await fetch(u, { signal: AbortSignal.timeout(8000) });
-                if (r.ok) {
-                    const d = await r.json();
-                    if (d && !d.errors) return d;
-                }
-            } catch {}
+// Безопасное чтение localStorage (чтобы старый кэш не ломал сайт)
+function safeParse(key, fallback) {
+    try {
+        const val = localStorage.getItem(key);
+        if (!val || val === 'undefined' || val === 'null') return fallback;
+        return JSON.parse(val) || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
+
+// Генератор заглушек (работает мгновенно)
+function makePoster(title, color1 = '#1e40af', color2 = '#0f172a') {
+    const cleanTitle = escapeHTML(String(title || 'Roblox'));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="432" viewBox="0 0 768 432">
+        <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="${color1}"/>
+                <stop offset="100%" stop-color="${color2}"/>
+            </linearGradient>
+        </defs>
+        <rect width="768" height="432" fill="url(#g)"/>
+        <circle cx="680" cy="70" r="140" fill="rgba(255,255,255,0.05)"/>
+        <circle cx="90" cy="380" r="110" fill="rgba(59,130,246,0.12)"/>
+        <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-weight="bold" font-size="38">${cleanTitle}</text>
+        <text x="50%" y="70%" dominant-baseline="middle" text-anchor="middle" fill="#93c5fd" font-family="Segoe UI, Arial, sans-serif" font-size="18">ROBLOX EXPERIENCE</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function toRoProxy(url) {
+    return url
+        .replace('https://users.roblox.com', 'https://users.roproxy.com')
+        .replace('https://games.roblox.com', 'https://games.roproxy.com')
+        .replace('https://thumbnails.roblox.com', 'https://thumbnails.roproxy.com')
+        .replace('https://apis.roblox.com', 'https://apis.roproxy.com');
+}
+
+async function fetchRobloxGet(url) {
+    const tryUrls = [
+        toRoProxy(url),
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+    ];
+    for (const pUrl of tryUrls) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 5000);
+            const res = await fetch(pUrl, { signal: controller.signal });
+            clearTimeout(timer);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && !data.errors) return data;
+            }
+        } catch (e) {}
+    }
+    return null;
+}
+
+// ==========================================
+// ПРОФИЛЬ
+// ==========================================
+let savedUser = safeParse('robloxUserProfile', null);
+
+function renderProfile() {
+    const box = document.getElementById('profileBox');
+    if (!box) return;
+    if (savedUser) {
+        const letter = (savedUser.displayName || savedUser.name || 'R').charAt(0).toUpperCase();
+        const imgTag = savedUser.avatar ? `<img src="${savedUser.avatar}" onerror="this.remove()" alt="Avatar">` : '';
+        box.innerHTML = `
+            <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Своя аватарка">${imgTag}${!savedUser.avatar ? letter : ''}</div>
+            <div>
+                <div class="username-text">${escapeHTML(savedUser.displayName || savedUser.name)} <span style="color:#93c5fd; font-weight:normal; font-size:12px;">(@${escapeHTML(savedUser.name)})</span></div>
+                <div class="user-sub">● ${savedUser.id ? 'ID: ' + savedUser.id : 'Кликни на кружок'}</div>
+            </div>
+            <button class="logout-btn" onclick="logoutUser()">Сменить</button>`;
+    } else {
+        box.innerHTML = `
+            <input type="text" class="login-input" id="usernameInput" placeholder="Ник или User ID" onkeydown="if(event.key==='Enter') loginUser()">
+            <button class="small-btn" onclick="loginUser()">Войти</button>`;
+    }
+}
+
+function pickCustomAvatar() {
+    const picker = document.getElementById('filePicker');
+    picker.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            savedUser.avatar = reader.result;
+            localStorage.setItem('robloxUserProfile', JSON.stringify(savedUser));
+            renderProfile();
+        };
+        reader.readAsDataURL(file);
+    };
+    picker.click();
+}
+
+async function loginUser() {
+    const input = document.getElementById('usernameInput');
+    const rawQuery = input.value.replace('@', '').trim();
+    if (!rawQuery) return;
+    
+    input.disabled = true;
+    input.value = 'Ищу...';
+
+    let userId = '', realName = rawQuery, displayName = rawQuery, avatarUrl = '';
+
+    if (/^\d+$/.test(rawQuery)) {
+        userId = rawQuery;
+        const userInfo = await fetchRobloxGet(`https://users.roblox.com/v1/users/${userId}`);
+        if (userInfo && userInfo.name) {
+            realName = userInfo.name;
+            displayName = userInfo.displayName || userInfo.name;
         }
-        return null;
+    } else {
+        const searchData = await fetchRobloxGet(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(rawQuery)}&limit=10`);
+        if (searchData && searchData.data && searchData.data.length > 0) {
+            const lower = rawQuery.toLowerCase();
+            const found = searchData.data.find(u => (u.name || '').toLowerCase() === lower || (u.displayName || '').toLowerCase() === lower) || searchData.data[0];
+            userId = found.id;
+            realName = found.name;
+            displayName = found.displayName || found.name;
+        }
     }
 
-    let tab = 'disc';
-    let allGames = [];
-    let myGames = JSON.parse(localStorage.getItem('rbxMy')) || [];
-    const ROW_H = 231; // Высота карточки (215px) + отступ (16px)
-
-    function getCols() {
-        const w = window.innerWidth;
-        if (w <= 700) return 2;
-        if (w <= 950) return 3;
-        return 4;
+    if (userId) {
+        const thumbData = await fetchRobloxGet(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`);
+        if (thumbData && thumbData.data && thumbData.data.length > 0) {
+            avatarUrl = thumbData.data[0].imageUrl || '';
+        }
     }
 
-    function getFiltered() {
-        const f = document.getElementById('q').value.toLowerCase().trim();
-        const src = tab === 'disc' ? allGames : myGames;
-        if (!f) return src;
-        return src.filter(g => g.name.toLowerCase().includes(f) || String(g.id).includes(f));
+    savedUser = { id: userId, name: realName, displayName: displayName, avatar: avatarUrl };
+    localStorage.setItem('robloxUserProfile', JSON.stringify(savedUser));
+    renderProfile();
+}
+
+function logoutUser() {
+    savedUser = null;
+    localStorage.removeItem('robloxUserProfile');
+    renderProfile();
+}
+
+// ==========================================
+// КАТАЛОГ
+// ==========================================
+let discoverGames = [
+    { id: '2753915549',  universeId: '994732206',   name: 'Blox Fruits',                playing: 'Популярное', c1: '#1d4ed8', c2: '#0f172a', img: '' },
+    { id: '4924922222',  universeId: '1686885941',  name: 'Brookhaven 🏡RP',            playing: 'Популярное', c1: '#0369a1', c2: '#0f172a', img: '' },
+    { id: '189707',      universeId: '65033',       name: 'Natural Disaster Survival',  playing: 'Классика',   c1: '#b45309', c2: '#0f172a', img: '' },
+    { id: '920587237',   universeId: '383310974',   name: 'Adopt Me!',                  playing: 'Популярное', c1: '#be185d', c2: '#0f172a', img: '' },
+    { id: '142823291',   universeId: '66654135',    name: 'Murder Mystery 2',           playing: 'Экшен',      c1: '#991b1b', c2: '#0f172a', img: '' },
+    { id: '6516141723',  universeId: '2440500124',  name: 'DOORS 👁️',                   playing: 'Хоррор',     c1: '#4c1d95', c2: '#090d16', img: '' },
+    { id: '286090429',   universeId: '111958650',   name: 'Arsenal',                    playing: 'Шутер',      c1: '#c2410c', c2: '#0f172a', img: '' },
+    { id: '13772394625', universeId: '4777817887',  name: 'Blade Ball',                 playing: 'Экшен',      c1: '#6d28d9', c2: '#0f172a', img: '' }
+];
+
+let currentTab = 'discover';
+let myGames = safeParse('myRobloxGames', []);
+
+async function refreshLiveThumbnails() {
+    const uids = discoverGames.map(g => g.universeId).join(',');
+    const [thumbData, infoData] = await Promise.all([
+        fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uids}&size=768x432&format=Png&isCircular=false`),
+        fetchRobloxGet(`https://games.roblox.com/v1/games?universeIds=${uids}`)
+    ]);
+
+    if (thumbData && thumbData.data) {
+        const map = {};
+        thumbData.data.forEach(t => {
+            const uid = t.targetId || t.universeId;
+            if (t.thumbnails && t.thumbnails.length > 0) map[uid] = t.thumbnails[0].imageUrl;
+        });
+        discoverGames.forEach(g => { if (map[g.universeId]) g.img = map[g.universeId]; });
     }
 
-    // Отрисовка ТОЛЬКО видимых на экране строк (принцип Sega)
-    function renderVirtual() {
-        const list = getFiltered();
-        const cols = getCols();
-        const totalRows = Math.ceil(list.length / cols);
+    if (infoData && infoData.data) {
+        const infoMap = {};
+        infoData.data.forEach(i => { infoMap[i.id] = i.playing; });
+        discoverGames.forEach(g => {
+            if (infoMap[g.universeId]) g.playing = Number(infoMap[g.universeId]).toLocaleString('ru-RU') + ' в игре';
+        });
+    }
+    renderGames();
+}
+
+function renderGames() {
+    const grid = document.getElementById('gamesGrid');
+    if (!grid) return;
+    
+    const filterText = document.getElementById('searchInput').value.toLowerCase();
+    grid.innerHTML = '';
+    const list = currentTab === 'discover' ? discoverGames : myGames;
+    
+    if (list.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;">Пока пусто...</div>';
+        return;
+    }
+
+    list.forEach((game, index) => {
+        if (filterText && !game.name.toLowerCase().includes(filterText) && !String(game.id).includes(filterText)) return;
+
+        const topRightBtn = currentTab === 'my' 
+            ? `<button class="del-btn" onclick="removeGame(${index})">✕</button>` 
+            : `<button class="fav-btn" onclick="saveToMy(${index})">★ В мои</button>`;
         
-        const vp = document.getElementById('viewport');
-        const grid = document.getElementById('grid');
-        vp.style.height = (totalRows * ROW_H) + 'px';
+        const customImgBtn = currentTab === 'my' 
+            ? `<button class="img-edit-btn" onclick="pickGameImage(${index})">🖼 Фото</button>` : '';
+            
+        const poster = makePoster(game.name, game.c1 || '#1e40af', game.c2 || '#0f172a');
+        const imgSrc = game.img ? game.img : poster;
+        
+        grid.innerHTML += `<div class="card">
+            <div class="thumb-wrap">
+                <span class="badge-online">● ${escapeHTML(game.playing || 'Roblox')}</span>
+                ${topRightBtn} ${customImgBtn}
+                <img class="thumb" src="${imgSrc}" onerror="this.onerror=null; this.src='${poster}';" alt="${escapeHTML(game.name)}">
+            </div>
+            <div class="card-body">
+                <div class="title" title="${escapeHTML(game.name)}">${escapeHTML(game.name)}</div>
+                <a href="roblox://experiences/start?placeId=${game.id}" class="play-btn">▶ PLAY</a>
+            </div>
+        </div>`;
+    });
+}
 
-        if (list.length === 0) {
-            grid.style.top = '0px';
-            grid.innerHTML = '<p style="color:#93c5fd; grid-column:1/-1;">Ничего не найдено. Нажми «Найти / +ID», чтобы поискать в базе Roblox!</p>';
-            return;
-        }
+function pickGameImage(index) {
+    const picker = document.getElementById('filePicker');
+    picker.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            myGames[index].img = reader.result;
+            localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
+            renderGames();
+        };
+        reader.readAsDataURL(file);
+    };
+    picker.click();
+}
 
-        const scrollY = Math.max(0, window.scrollY - vp.offsetTop);
-        const startRow = Math.max(0, Math.floor(scrollY / ROW_H) - 1);
-        const visibleRows = Math.ceil(window.innerHeight / ROW_H) + 3;
-        const endRow = Math.min(totalRows, startRow + visibleRows);
-
-        grid.style.top = (startRow * ROW_H) + 'px';
-
-        const slice = list.slice(startRow * cols, endRow * cols);
-        grid.innerHTML = slice.map((g, idx) => {
-            const realIndex = startRow * cols + idx;
-            const imgHtml = g.img ? '<img src="' + g.img + '" loading="lazy" onerror="this.remove()">' : '';
-            const btnHtml = tab === 'my'
-                ? '<button class="del-btn" onclick="delMy(' + realIndex + ')">✕</button>'
-                : '<button class="mini-btn" onclick="addMy(' + realIndex + ')">★ В мои</button>';
-
-            return '<div class="card">' +
-                '<div class="thumb">' +
-                    '<span class="thumb-title">' + g.name + '</span>' +
-                    '<span class="tag">● ' + (g.tag || 'Roblox') + '</span>' +
-                    btnHtml + imgHtml +
-                '</div>' +
-                '<div class="body">' +
-                    '<div class="title" title="' + g.name + '">' + g.name + '</div>' +
-                    '<a class="play" href="roblox://experiences/start?placeId=' + g.id + '">▶ PLAY</a>' +
-                '</div>' +
-            '</div>';
-        }).join('');
+function saveToMy(index) {
+    const game = { ...discoverGames[index] };
+    if (!myGames.some(g => g.id === game.id)) {
+        myGames.unshift(game);
+        localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
     }
+    document.getElementById('status').textContent = `«${game.name}» добавлена!`;
+    setTimeout(() => document.getElementById('status').textContent = '', 2000);
+}
 
-    function setTab(t) {
-        tab = t;
-        document.getElementById('tDisc').className = t === 'disc' ? 'active' : '';
-        document.getElementById('tMy').className = t === 'my' ? 'active' : '';
-        window.scrollTo(0, 0);
-        renderVirtual();
+function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tabDiscover').classList.toggle('active', tab === 'discover');
+    document.getElementById('tabMy').classList.toggle('active', tab === 'my');
+    renderGames();
+}
+
+async function addGameById() {
+    const input = document.getElementById('searchInput');
+    const status = document.getElementById('status');
+    const match = input.value.match(/\d+/);
+    
+    if (!match) {
+        status.textContent = 'Вставь ID игры!';
+        return;
     }
+    
+    const placeId = match[0];
+    status.textContent = 'Ищу...';
+    let gameName = '', imgUrl = '';
 
-    function addMy(idx) {
-        const g = getFiltered().at(idx);
-        if (g && !myGames.some(x => x.id == g.id)) {
-            myGames.unshift({ ...g });
-            localStorage.setItem('rbxMy', JSON.stringify(myGames));
-        }
-        document.getElementById('status').textContent = '«' + g.name + '» добавлена в Мои игры!';
-    }
-
-    function delMy(idx) {
-        const g = getFiltered().at(idx);
-        myGames = myGames.filter(x => x.id != g.id);
-        localStorage.setItem('rbxMy', JSON.stringify(myGames));
-        renderVirtual();
-    }
-
-    // Загрузка всех основных категорий игр из Roblox
-    async function loadAllRobloxGames() {
-        const status = document.getElementById('status');
-        const sorts = ['top-playing-now', 'up-and-coming', 'top-rated', 'most-engaging', 'popular-worldwide'];
-        const seen = new Set();
-
-        for (const sort of sorts) {
-            status.textContent = 'Загружаю подборку: ' + sort + '...';
-            const data = await api(H_APIS + '/explore-api/v1/get-sort-content?sessionId=1&sortId=' + sort);
-            if (data && data.games) {
-                for (const g of data.games) {
-                    if (!seen.has(g.rootPlaceId)) {
-                        seen.add(g.rootPlaceId);
-                        allGames.push({
-                            id: g.rootPlaceId,
-                            uid: g.universeId,
-                            name: g.name,
-                            tag: (g.playerCount || 0).toLocaleString('ru-RU') + ' в игре',
-                            img: ''
-                        });
-                    }
-                }
-                document.getElementById('cnt').textContent = allGames.length;
-                renderVirtual();
-            }
-        }
-
-        // Если API подборок вернуло игры — пробуем подтянуть обложки пачками
-        if (allGames.length > 0) {
-            status.textContent = 'Загружено игр из Roblox: ' + allGames.length + ' (листай вниз, работает оптимизация Sega)';
-            for (let i = 0; i < allGames.length; i += 50) {
-                const batch = allGames.slice(i, i + 50);
-                const uids = batch.map(x => x.uid).filter(Boolean).join(',');
-                const th = await api(H_THUMB + '/v1/games/multiget/thumbnails?universeIds=' + uids + '&size=768x432&format=Png&isCircular=false');
-                if (th && th.data) {
-                    th.data.forEach(t => {
-                        const game = batch.find(x => x.uid == t.universeId);
-                        if (game && t.thumbnails && t.thumbnails.at(0)) game.img = t.thumbnails.at(0).imageUrl;
-                    });
-                    renderVirtual();
-                }
-            }
-        } else {
-            status.textContent = 'Не удалось загрузить общий список (проверь соединение). Можешь искать игры по названию или ID сверху!';
+    const uData = await fetchRobloxGet(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
+    if (uData && uData.universeId) {
+        const uid = uData.universeId;
+        const [infoData, thumbData] = await Promise.all([
+            fetchRobloxGet(`https://games.roblox.com/v1/games?universeIds=${uid}`),
+            fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uid}&size=768x432&format=Png&isCircular=false`)
+        ]);
+        if (infoData && infoData.data && infoData.data.length > 0) gameName = infoData.data[0].name;
+        if (thumbData && thumbData.data && thumbData.data.length > 0 && thumbData.data[0].thumbnails && thumbData.data[0].thumbnails.length > 0) {
+            imgUrl = thumbData.data[0].thumbnails[0].imageUrl;
         }
     }
 
-    // Поиск по всей базе Roblox по названию или добавление по ID
-    async function searchRoblox() {
-        const q = document.getElementById('q').value.trim();
-        const status = document.getElementById('status');
-        if (!q) return;
-
-        // Если ввели цифры (ID игры)
-        if (/^\d+$/.test(q)) {
-            status.textContent = 'Ищу игру по ID ' + q + '...';
-            const u = await api(H_APIS + '/universes/v1/places/' + q + '/universe');
-            let name = 'Игра #' + q;
-            if (u && u.universeId) {
-                const inf = await api(H_GAMES + '/v1/games?universeIds=' + u.universeId);
-                if (inf && inf.data && inf.data.at(0)) name = inf.data.at(0).name;
-            }
-            myGames.unshift({ id: q, name: name, tag: 'ID: ' + q, img: '' });
-            localStorage.setItem('rbxMy', JSON.stringify(myGames));
-            document.getElementById('q').value = '';
-            setTab('my');
-            status.textContent = 'Добавлено: ' + name;
-            return;
-        }
-
-        // Поиск по названию во всей базе Roblox
-        status.textContent = 'Ищу «' + q + '» во всей базе Roblox...';
-        const res = await api(H_APIS + '/search-api/omni-search?searchType=games&query=' + encodeURIComponent(q) + '&sessionId=1');
-        let added = 0;
-        if (res && res.searchResults) {
-            res.searchResults.forEach(group => {
-                (group.contents || []).forEach(g => {
-                    if (g.rootPlaceId && !allGames.some(x => x.id == g.rootPlaceId)) {
-                        allGames.unshift({
-                            id: g.rootPlaceId,
-                            uid: g.universeId,
-                            name: g.name,
-                            tag: (g.playerCount || 0).toLocaleString('ru-RU') + ' в игре',
-                            img: ''
-                        });
-                        added++;
-                    }
-                });
-            });
-        }
-        document.getElementById('cnt').textContent = allGames.length;
-        status.textContent = added > 0 ? 'Найдено новых игр: ' + added : 'Поиск завершён.';
-        renderVirtual();
+    if (!gameName) {
+        status.textContent = '';
+        gameName = prompt('Введи название для игры:', 'Моя игра #' + placeId);
+        if (!gameName) return;
     }
 
-    window.addEventListener('scroll', renderVirtual);
-    window.addEventListener('resize', renderVirtual);
+    myGames.unshift({ id: placeId, name: gameName, playing: 'ID: ' + placeId, c1: '#1e40af', c2: '#0f172a', img: imgUrl });
+    localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
+    input.value = '';
+    status.textContent = 'Добавлено!';
+    switchTab('my');
+    setTimeout(() => status.textContent = '', 2000);
+}
 
-    renderVirtual();
-    loadAllRobloxGames();
+function removeGame(index) {
+    myGames.splice(index, 1);
+    localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
+    renderGames();
+}
+
+// ЗАПУСК
+renderProfile();
+renderGames();
+refreshLiveThumbnails();
 </script>
 </body>
 </html>
