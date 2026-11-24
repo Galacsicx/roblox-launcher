@@ -14,7 +14,6 @@
         }
         .container { max-width: 1120px; margin: 0 auto; }
 
-        /* Шапка */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -45,7 +44,6 @@
             border-color: #60a5fa;
         }
 
-        /* Профиль */
         .profile-box {
             display: flex;
             align-items: center;
@@ -112,7 +110,6 @@
             margin-left: 4px;
         }
 
-        /* Панель поиска и добавления */
         .control-bar {
             background: rgba(10, 22, 46, 0.75);
             border: 1px solid #2e5699;
@@ -146,7 +143,6 @@
         }
         .add-btn:hover { background: #2563eb; }
 
-        /* Сетка игр */
         .games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -218,7 +214,7 @@
         }
         .card-body { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
         .title { font-weight: bold; font-size: 15px; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
+
         .play-btn {
             display: block;
             text-align: center;
@@ -244,7 +240,6 @@
                 <button class="tab-btn" id="tabMy" onclick="switchTab('my')">⭐ Мои игры</button>
             </div>
         </div>
-
         <div class="profile-box" id="profileBox"></div>
     </div>
 
@@ -257,77 +252,67 @@
     <div class="games-grid" id="gamesGrid"></div>
 </div>
 
-<!-- Скрытый выбор картинки с ПК -->
 <input type="file" id="filePicker" accept="image/*" style="display:none">
 
 <script>
-    // Встроенный генератор красивых обложек (работает мгновенно и без интернета)
-    function makePoster(title, color1 = '#1e40af', color2 = '#0f172a') {
-        const cleanTitle = title.replace(/[<>&'"]/g, '');
-        const svg = `<svg xmlns="http://w3.org" width="768" height="432" viewBox="0 0 768 432">
-            <defs>
-                <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="${color1}"/>
-                    <stop offset="100%" stop-color="${color2}"/>
-                </linearGradient>
-            </defs>
-            <rect width="768" height="432" fill="url(#g)"/>
-            <circle cx="680" cy="70" r="140" fill="rgba(255,255,255,0.05)"/>
-            <circle cx="90" cy="380" r="110" fill="rgba(59,130,246,0.12)"/>
-            <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-weight="bold" font-size="38">${cleanTitle}</text>
-            <text x="50%" y="70%" dominant-baseline="middle" text-anchor="middle" fill="#93c5fd" font-family="Segoe UI, Arial, sans-serif" font-size="18">ROBLOX EXPERIENCE</text>
-        </svg>`;
-        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    }
-
-    function proxyImg(url) {
-        if (!url) return '';
-        if (url.startsWith('data:') || url.startsWith('https://wsrv.nl')) return url;
-        return 'https://wsrv.nl?url=' + encodeURIComponent(url);
-    }
-
-    async function fetchRobloxGet(url) {
-        const proxies = [
-            url.replace('roblox.com', 'roproxy.com'),
-            'https://allorigins.win' + encodeURIComponent(url),
-            'https://corsproxy.io?' + encodeURIComponent(url)
-        ];
-        for (const pUrl of proxies) {
-    try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 3500);
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timer);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && !data.errors) return data;
-        }
-    } catch (e) {}
-    return null;
-}
-
-function proxyImg(url) {
-    if (!url) return '';
-    return 'https://images.weserv.nl/?url=' + encodeURIComponent(url.replace(/^https?:\/\//, ''));
-}
-
-function makePoster(name, c1, c2) {
-    const safe = String(name || 'Roblox').replace(/[<>&"']/g, '');
+// ============================================================
+// УТИЛИТЫ
+// ============================================================
+function makePoster(title, color1 = '#1e40af', color2 = '#0f172a') {
+    const cleanTitle = String(title || 'Roblox').replace(/[<>&'"]/g, '');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="768" height="432" viewBox="0 0 768 432">
         <defs>
             <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="${c1}"/>
-                <stop offset="100%" stop-color="${c2}"/>
+                <stop offset="0%" stop-color="${color1}"/>
+                <stop offset="100%" stop-color="${color2}"/>
             </linearGradient>
         </defs>
         <rect width="768" height="432" fill="url(#g)"/>
-        <text x="384" y="216" font-family="Arial, sans-serif" font-size="52" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">${safe}</text>
+        <circle cx="680" cy="70" r="140" fill="rgba(255,255,255,0.05)"/>
+        <circle cx="90" cy="380" r="110" fill="rgba(59,130,246,0.12)"/>
+        <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-weight="bold" font-size="38">${cleanTitle}</text>
+        <text x="50%" y="70%" dominant-baseline="middle" text-anchor="middle" fill="#93c5fd" font-family="Segoe UI, Arial, sans-serif" font-size="18">ROBLOX EXPERIENCE</text>
     </svg>`;
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
+function proxyImg(url) {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    return 'https://wsrv.nl/?url=' + encodeURIComponent(url);
+}
+
+// Перевод любого roblox.com URL в roproxy (у него есть CORS)
+function toRoProxy(url) {
+    return url
+        .replace('https://users.roblox.com', 'https://users.roproxy.com')
+        .replace('https://games.roblox.com', 'https://games.roproxy.com')
+        .replace('https://thumbnails.roblox.com', 'https://thumbnails.roproxy.com')
+        .replace('https://apis.roblox.com', 'https://apis.roproxy.com');
+}
+
+async function fetchRobloxGet(url) {
+    const tryUrls = [
+        toRoProxy(url),
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+        'https://corsproxy.io/?url=' + encodeURIComponent(url)
+    ];
+    for (const pUrl of tryUrls) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 5000);
+            const res = await fetch(pUrl, { signal: controller.signal });
+            clearTimeout(timer);
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data && !data.errors) return data;
+        } catch (e) {}
+    }
+    return null;
+}
+
 // ============================================================
-// 1. ПРОФИЛЬ И АВАТАРКА
+// ПРОФИЛЬ
 // ============================================================
 let savedUser = JSON.parse(localStorage.getItem('robloxUserProfile')) || null;
 
@@ -391,26 +376,21 @@ async function loginUser() {
         const searchData = await fetchRobloxGet(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(rawQuery)}&limit=10`);
         if (searchData && searchData.data && searchData.data.length > 0) {
             const lower = rawQuery.toLowerCase();
-            const found = searchData.data.find(u => u.name.toLowerCase() === lower || u.displayName.toLowerCase() === lower) || searchData.data.at(0);
+            const found = searchData.data.find(u => (u.name || '').toLowerCase() === lower || (u.displayName || '').toLowerCase() === lower) || searchData.data[0];
             userId = found.id;
             realName = found.name;
-            displayName = found.displayName;
+            displayName = found.displayName || found.name;
         }
     }
 
     if (userId) {
         const thumbData = await fetchRobloxGet(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`);
         if (thumbData && thumbData.data && thumbData.data.length > 0) {
-            avatarUrl = thumbData.data.at(0).imageUrl;
+            avatarUrl = thumbData.data[0].imageUrl || '';
         }
     }
 
-    savedUser = {
-        id: userId,
-        name: realName,
-        displayName: displayName,
-        avatar: avatarUrl
-    };
+    savedUser = { id: userId, name: realName, displayName: displayName, avatar: avatarUrl };
     localStorage.setItem('robloxUserProfile', JSON.stringify(savedUser));
     renderProfile();
 }
@@ -422,21 +402,21 @@ function logoutUser() {
 }
 
 // ============================================================
-// 2. КАТАЛОГ ИГР
+// КАТАЛОГ
 // ============================================================
 let discoverGames = [
-    { id: '2753915549', universeId: '994732206', name: 'Blox Fruits', playing: 'Популярное', c1: '#1d4ed8', c2: '#0f172a', img: '' },
-    { id: '4924922222', universeId: '1686885941', name: 'Brookhaven 🏡RP', playing: 'Популярное', c1: '#0369a1', c2: '#0f172a', img: '' },
-    { id: '189707', universeId: '65033', name: 'Natural Disaster Survival', playing: 'Классика', c1: '#b45309', c2: '#0f172a', img: '' },
-    { id: '920587237', universeId: '383310974', name: 'Adopt Me!', playing: 'Популярное', c1: '#be185d', c2: '#0f172a', img: '' },
-    { id: '142823291', universeId: '66654135', name: 'Murder Mystery 2', playing: 'Экшен', c1: '#991b1b', c2: '#0f172a', img: '' },
-    { id: '6516141723', universeId: '2440500124', name: 'DOORS 👁️', playing: 'Хоррор', c1: '#4c1d95', c2: '#090d16', img: '' },
-    { id: '286090429', universeId: '111958650', name: 'Arsenal', playing: 'Шутер', c1: '#c2410c', c2: '#0f172a', img: '' },
-    { id: '13772394625', universeId: '4777817887', name: 'Blade Ball', playing: 'Экшен', c1: '#6d28d9', c2: '#0f172a', img: '' },
-    { id: '155615604', universeId: '73885730', name: 'Prison Life', playing: 'Классика', c1: '#374151', c2: '#0f172a', img: '' },
-    { id: '6872265039', universeId: '2619619496', name: 'BedWars', playing: 'PvP', c1: '#047857', c2: '#0f172a', img: '' },
-    { id: '537413528', universeId: '210851291', name: 'Build A Boat For Treasure', playing: 'Приключения', c1: '#0f766e', c2: '#0f172a', img: '' },
-    { id: '3956818381', universeId: '1335695570', name: 'Ninja Legends', playing: 'Симулятор', c1: '#4338ca', c2: '#0f172a', img: '' }
+    { id: '2753915549',  universeId: '994732206',   name: 'Blox Fruits',                playing: 'Популярное', c1: '#1d4ed8', c2: '#0f172a', img: '' },
+    { id: '4924922222',  universeId: '1686885941',  name: 'Brookhaven 🏡RP',            playing: 'Популярное', c1: '#0369a1', c2: '#0f172a', img: '' },
+    { id: '189707',      universeId: '65033',       name: 'Natural Disaster Survival',  playing: 'Классика',   c1: '#b45309', c2: '#0f172a', img: '' },
+    { id: '920587237',   universeId: '383310974',   name: 'Adopt Me!',                  playing: 'Популярное', c1: '#be185d', c2: '#0f172a', img: '' },
+    { id: '142823291',   universeId: '66654135',    name: 'Murder Mystery 2',           playing: 'Экшен',      c1: '#991b1b', c2: '#0f172a', img: '' },
+    { id: '6516141723',  universeId: '2440500124',  name: 'DOORS 👁️',                   playing: 'Хоррор',     c1: '#4c1d95', c2: '#090d16', img: '' },
+    { id: '286090429',   universeId: '111958650',   name: 'Arsenal',                    playing: 'Шутер',      c1: '#c2410c', c2: '#0f172a', img: '' },
+    { id: '13772394625', universeId: '4777817887',  name: 'Blade Ball',                 playing: 'Экшен',      c1: '#6d28d9', c2: '#0f172a', img: '' },
+    { id: '155615604',   universeId: '73885730',    name: 'Prison Life',                playing: 'Классика',   c1: '#374151', c2: '#0f172a', img: '' },
+    { id: '6872265039',  universeId: '2619619496',  name: 'BedWars',                    playing: 'PvP',        c1: '#047857', c2: '#0f172a', img: '' },
+    { id: '537413528',   universeId: '210851291',   name: 'Build A Boat For Treasure',  playing: 'Приключения',c1: '#0f766e', c2: '#0f172a', img: '' },
+    { id: '3956818381',  universeId: '1335695570',  name: 'Ninja Legends',              playing: 'Симулятор',  c1: '#4338ca', c2: '#0f172a', img: '' }
 ];
 
 let currentTab = 'discover';
@@ -451,7 +431,8 @@ async function refreshLiveThumbnails() {
     if (thumbData && thumbData.data) {
         const map = {};
         thumbData.data.forEach(t => {
-            if (t.thumbnails && t.thumbnails.length > 0) map[t.targetId || t.universeId] = t.thumbnails.at(0).imageUrl;
+            const uid = t.targetId || t.universeId;
+            if (t.thumbnails && t.thumbnails.length > 0) map[uid] = t.thumbnails[0].imageUrl;
         });
         discoverGames.forEach(g => {
             if (map[g.universeId]) g.img = map[g.universeId];
@@ -461,7 +442,7 @@ async function refreshLiveThumbnails() {
         const infoMap = {};
         infoData.data.forEach(i => { infoMap[i.id] = i.playing; });
         discoverGames.forEach(g => {
-            if (infoMap[g.universeId]) g.playing = infoMap[g.universeId].toLocaleString('ru-RU') + ' в игре';
+            if (infoMap[g.universeId]) g.playing = Number(infoMap[g.universeId]).toLocaleString('ru-RU') + ' в игре';
         });
     }
     renderGames();
@@ -473,7 +454,7 @@ function renderGames() {
     grid.innerHTML = '';
     const list = currentTab === 'discover' ? discoverGames : myGames;
     if (list.length === 0 && currentTab === 'my') {
-        grid.innerHTML = 'Пока пусто. Нажми «★ В мои» на любой игре или вставь ID игры сверху!';
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#93c5fd;">Пока пусто. Нажми «★ В мои» на любой игре или вставь ID игры сверху!</div>';
         return;
     }
     list.forEach((game, index) => {
@@ -505,11 +486,11 @@ function renderGames() {
 function pickGameImage(index) {
     const picker = document.getElementById('filePicker');
     picker.onchange = (e) => {
-        const file = e.target.files.at(0);
+        const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-            myGames.at(index).img = reader.result;
+            myGames[index].img = reader.result;
             localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
             renderGames();
         };
@@ -519,7 +500,7 @@ function pickGameImage(index) {
 }
 
 function saveToMy(index) {
-    const game = { ...discoverGames.at(index) };
+    const game = { ...discoverGames[index] };
     if (!myGames.some(g => g.id === game.id)) {
         myGames.unshift(game);
         localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
@@ -544,10 +525,11 @@ async function addGameById() {
         status.textContent = 'Вставь ID или ссылку на игру!';
         return;
     }
-    const placeId = match.at(0);
+    const placeId = match[0];
     status.textContent = 'Ищу игру...';
     let gameName = '';
     let imgUrl = '';
+
     const uData = await fetchRobloxGet(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
     if (uData && uData.universeId) {
         const uid = uData.universeId;
@@ -556,21 +538,25 @@ async function addGameById() {
             fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uid}&size=768x432&format=Png&isCircular=false`)
         ]);
         if (infoData && infoData.data && infoData.data.length > 0) {
-            gameName = infoData.data.at(0).name;
+            gameName = infoData.data[0].name;
         }
-        if (thumbData && thumbData.data && thumbData.data.length > 0 && thumbData.data.at(0).thumbnails.length > 0) {
-            imgUrl = thumbData.data.at(0).thumbnails.at(0).imageUrl;
+        if (thumbData && thumbData.data && thumbData.data.length > 0 && thumbData.data[0].thumbnails && thumbData.data[0].thumbnails.length > 0) {
+            imgUrl = thumbData.data[0].thumbnails[0].imageUrl;
         }
     }
+
     if (!gameName) {
         status.textContent = '';
         gameName = prompt('Введи название для этой игры (ID: ' + placeId + '):', 'Моя игра #' + placeId);
         if (!gameName) return;
     }
+
     myGames.unshift({
         id: placeId,
         name: gameName,
         playing: 'ID: ' + placeId,
+        c1: '#1e40af',
+        c2: '#0f172a',
         img: imgUrl
     });
     localStorage.setItem('myRobloxGames', JSON.stringify(myGames));
@@ -592,3 +578,6 @@ function removeGame(index) {
 renderProfile();
 renderGames();
 refreshLiveThumbnails();
+</script>
+</body>
+</html>
