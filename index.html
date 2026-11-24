@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Roblox Launcher v2</title>
+    <title>Roblox Launcher Direct</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body {
@@ -239,17 +239,12 @@
 </div>
 
 <script>
-    function proxyImg(url) {
-        if (!url) return '';
-        if (url.startsWith('https://wsrv.nl') || url.startsWith('https://placehold.co')) return url;
-        return 'https://wsrv.nl?url=' + encodeURIComponent(url);
-    }
-
+    // Запрос к API Roblox через прокси
     async function fetchRobloxGet(url) {
         const proxies = [
-            url.replace('roblox.com', 'roproxy.com'),
             'https://allorigins.win' + encodeURIComponent(url),
-            'https://corsproxy.io?' + encodeURIComponent(url)
+            'https://corsproxy.io?' + encodeURIComponent(url),
+            url.replace('roblox.com', 'roproxy.com')
         ];
         for (const pUrl of proxies) {
             try {
@@ -266,14 +261,16 @@
         return null;
     }
 
+    // --- 1. ПРОФИЛЬ И ПРЯМАЯ ЗАГРУЗКА АВАТАРКИ С tr.rbxcdn.com ---
     let savedUser = JSON.parse(localStorage.getItem('robloxUserProfile')) || null;
 
     function renderProfile() {
         const box = document.getElementById('profileBox');
         if (savedUser) {
             const letter = (savedUser.displayName || savedUser.name || 'R').charAt(0).toUpperCase();
+            // Берём прямую ссылку на tr.rbxcdn.com (работает через твой hosts!)
             const imgTag = savedUser.avatar
-                ? `<img src="${proxyImg(savedUser.avatar)}" onerror="this.remove()" alt="Avatar">`
+                ? `<img src="${savedUser.avatar}" onerror="this.remove()" alt="Avatar">`
                 : '';
 
             box.innerHTML = `
@@ -298,14 +295,13 @@
         if (!rawQuery) return;
 
         input.disabled = true;
-        input.value = 'Загружаю...';
+        input.value = 'Ищу аватар...';
 
         let userId = '';
         let realName = rawQuery;
         let displayName = rawQuery;
         let avatarUrl = '';
 
-        // Если ввели сразу числовой User ID из профиля Roblox
         if (/^\d+$/.test(rawQuery)) {
             userId = rawQuery;
             const userInfo = await fetchRobloxGet(`https://roblox.com{userId}`);
@@ -314,7 +310,6 @@
                 displayName = userInfo.displayName || userInfo.name;
             }
         } else {
-            // Ищем по @username или Display Name
             const searchData = await fetchRobloxGet(`https://roblox.com{encodeURIComponent(rawQuery)}&limit=10`);
             if (searchData && searchData.data && searchData.data.length > 0) {
                 const lower = rawQuery.toLowerCase();
@@ -349,6 +344,7 @@
         renderProfile();
     }
 
+    // --- 2. КАТАЛОГ ИГР С ПРЯМЫМИ КАРТИНКАМИ tr.rbxcdn.com ---
     let discoverGames = [
         { id: '2753915549', name: 'Blox Fruits', playing: 'Популярное', img: 'https://rbxcdn.com' },
         { id: '4924922222', name: 'Brookhaven 🏡RP', playing: 'Популярное', img: 'https://rbxcdn.com' },
@@ -395,7 +391,7 @@
                     <div class="thumb-wrap">
                         <span class="badge-online">● ${game.playing || 'Roblox'}</span>
                         ${topRightBtn}
-                        <img class="thumb" src="${game.img ? proxyImg(game.img) : fallbackImg}" onerror="this.src='${fallbackImg}'" alt="${game.name}">
+                        <img class="thumb" src="${game.img || fallbackImg}" onerror="this.src='${fallbackImg}'" alt="${game.name}">
                     </div>
                     <div class="card-body">
                         <div class="title" title="${game.name}">${game.name}</div>
