@@ -52,8 +52,14 @@
             padding: 7px 14px;
             border-radius: 8px;
             border: 1px solid #3b6ec2;
-            position: relative;
         }
+        
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        
         .avatar-wrap {
             width: 44px;
             height: 44px;
@@ -67,22 +73,21 @@
             font-weight: bold;
             font-size: 18px;
             color: white;
-            flex-shrink: 0;
             cursor: pointer;
-            position: relative;
         }
+        
         .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
         
         .clear-avatar-btn {
             position: absolute;
-            top: 0;
-            right: 0;
+            top: -6px;
+            right: -6px;
             background: #ef4444;
             color: white;
-            border: 1px solid #13294d;
+            border: 2px solid #13294d;
             border-radius: 50%;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             font-size: 10px;
             font-weight: bold;
             display: flex;
@@ -360,8 +365,10 @@ function renderProfile() {
             : '';
 
         box.innerHTML = `
-            <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Нажми, чтобы поставить свою картинку">
-                ${imgTag}${!activeAvatar ? letter : ''}
+            <div class="avatar-container">
+                <div class="avatar-wrap" onclick="pickCustomAvatar()" title="Нажми, чтобы поставить свою картинку">
+                    ${imgTag}${!activeAvatar ? letter : ''}
+                </div>
                 ${clearBtn}
             </div>
             <div>
