@@ -309,6 +309,23 @@ async function fetchRobloxGet(url) {
     return null;
 }
 
+// Новая функция для POST-запроса (нужна для точного поиска по нику)
+async function fetchRobloxPost(url, body) {
+    const proxyUrl = toRoProxy(url); // Используем roproxy, он поддерживает POST
+    try {
+        const res = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && !data.errors) return data;
+        }
+    } catch (e) {}
+    return null;
+}
+
 let savedUser = safeParse('robloxUserProfile', null);
 let myFriends = [];
 let myGames = [];
@@ -604,6 +621,7 @@ async function addFriendByUsername() {
     status.textContent = 'Searching...';
     let userId = '', realName = '', displayName = '', avatarUrl = '';
 
+    // 1. Сначала пробуем обычный поиск
     if (/^\d+$/.test(rawQuery)) {
         userId = rawQuery;
         const userInfo = await fetchRobloxGet(`https://users.roblox.com/v1/users/${userId}`);
@@ -621,8 +639,22 @@ async function addFriendByUsername() {
         }
     }
 
+    // 2. Если не нашли, пробуем точный поиск по нику
     if (!userId) {
-        status.textContent = 'User not found!';
+        const exactData = await fetchRobloxPost(`https://users.roblox.com/v1/usernames/users`, {
+            usernames: [rawQuery],
+            excludeBannedUsers: true
+        });
+        if (exactData && exactData.data && exactData.data.length > 0) {
+            const found = exactData.data[0];
+            userId = found.id;
+            realName = found.name;
+            displayName = found.displayName || found.name;
+        }
+    }
+
+    if (!userId) {
+        status.textContent = 'User not found! (Check spelling)';
         setTimeout(() => status.textContent = '', 3000);
         return;
     }
