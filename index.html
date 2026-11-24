@@ -48,16 +48,19 @@
 </div>
 
 <script>
+    const H_APIS  = 'https://' + '://roblox.com';
+    const H_GAMES = 'https://' + '://roblox.com';
+    const H_THUMB = 'https://' + '://roblox.com';
+
     async function api(url) {
         const list = [
             url.replace('roblox.com', 'roproxy.com'),
-            'https://corsproxy.io?' + encodeURIComponent(url),
             'https://allorigins.win' + encodeURIComponent(url),
             'https://codetabs.com' + encodeURIComponent(url)
         ];
         for (const u of list) {
             try {
-                const r = await fetch(u, { signal: AbortSignal.timeout(10000) });
+                const r = await fetch(u, { signal: AbortSignal.timeout(8000) });
                 if (r.ok) {
                     const d = await r.json();
                     if (d && !d.errors) return d;
@@ -70,32 +73,32 @@
     function imgTag(url, alt = '') {
         if (!url) return '';
         const wsrv = 'https://wsrv.nl' + encodeURIComponent(url);
-        return `<img src="${url}" alt="${alt}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${wsrv}';}else{this.remove();}">`;
+        return '<img src="' + url + '" alt="' + alt + '" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'' + wsrv + '\';}else{this.remove();}">';
     }
 
     let user = localStorage.getItem('rbxNick') || '';
     let tab = 'disc';
     let my = JSON.parse(localStorage.getItem('rbxMy')) || [];
     let disc = [
-        { id: '2753915549', uid: '994732206', name: 'Blox Fruits', tag: 'Загружаю фото...', img: '' },
-        { id: '4924922222', uid: '1686885941', name: 'Brookhaven RP', tag: 'Загружаю фото...', img: '' },
-        { id: '189707', uid: '65033', name: 'Natural Disaster Survival', tag: 'Загружаю фото...', img: '' },
-        { id: '920587237', uid: '383310974', name: 'Adopt Me!', tag: 'Загружаю фото...', img: '' },
-        { id: '142823291', uid: '66654135', name: 'Murder Mystery 2', tag: 'Загружаю фото...', img: '' },
-        { id: '6516141723', uid: '2440500124', name: 'DOORS', tag: 'Загружаю фото...', img: '' },
-        { id: '286090429', uid: '111958650', name: 'Arsenal', tag: 'Загружаю фото...', img: '' },
-        { id: '13772394625', uid: '4777817887', name: 'Blade Ball', tag: 'Загружаю фото...', img: '' },
-        { id: '155615604', uid: '73885730', name: 'Prison Life', tag: 'Загружаю фото...', img: '' },
-        { id: '6872265039', uid: '2619619496', name: 'BedWars', tag: 'Загружаю фото...', img: '' },
-        { id: '537413528', uid: '210851291', name: 'Build A Boat For Treasure', tag: 'Загружаю фото...', img: '' },
-        { id: '3956818381', uid: '1335695570', name: 'Ninja Legends', tag: 'Загружаю фото...', img: '' }
+        { id: '2753915549', uid: '994732206', name: 'Blox Fruits', tag: 'Загружаю...', img: '' },
+        { id: '4924922222', uid: '1686885941', name: 'Brookhaven RP', tag: 'Загружаю...', img: '' },
+        { id: '189707', uid: '65033', name: 'Natural Disaster Survival', tag: 'Загружаю...', img: '' },
+        { id: '920587237', uid: '383310974', name: 'Adopt Me!', tag: 'Загружаю...', img: '' },
+        { id: '142823291', uid: '66654135', name: 'Murder Mystery 2', tag: 'Загружаю...', img: '' },
+        { id: '6516141723', uid: '2440500124', name: 'DOORS', tag: 'Загружаю...', img: '' },
+        { id: '286090429', uid: '111958650', name: 'Arsenal', tag: 'Загружаю...', img: '' },
+        { id: '13772394625', uid: '4777817887', name: 'Blade Ball', tag: 'Загружаю...', img: '' },
+        { id: '155615604', uid: '73885730', name: 'Prison Life', tag: 'Загружаю...', img: '' },
+        { id: '6872265039', uid: '2619619496', name: 'BedWars', tag: 'Загружаю...', img: '' },
+        { id: '537413528', uid: '210851291', name: 'Build A Boat For Treasure', tag: 'Загружаю...', img: '' },
+        { id: '3956818381', uid: '1335695570', name: 'Ninja Legends', tag: 'Загружаю...', img: '' }
     ];
 
     function drawProf() {
         const el = document.getElementById('prof');
         el.innerHTML = user
-            ? `<b>@${user}</b> <button style="border-color:#ef4444;color:#f87171;padding:4px 8px;font-size:11px;" onclick="user='';localStorage.removeItem('rbxNick');drawProf()">Выйти</button>`
-            : `<input id="uIn" placeholder="Твой ник в Roblox" onkeydown="if(event.key==='Enter')login()"><button class="btn-blue" onclick="login()">Войти</button>`;
+            ? '<b>@' + user + '</b> <button style="border-color:#ef4444;color:#f87171;padding:4px 8px;font-size:11px;" onclick="user=\'\';localStorage.removeItem(\'rbxNick\');drawProf()">Выйти</button>'
+            : '<input id="uIn" placeholder="Твой ник в Roblox" onkeydown="if(event.key===\'Enter\')login()"><button class="btn-blue" onclick="login()">Войти</button>';
     }
 
     function login() {
@@ -109,16 +112,17 @@
     function draw() {
         const f = document.getElementById('q').value.toLowerCase();
         const list = (tab === 'disc' ? disc : my).filter(g => g.name.toLowerCase().includes(f) || String(g.id).includes(f));
-        document.getElementById('grid').innerHTML = list.length ? list.map((g, i) => `
-            <div class="card">
-                <div class="thumb">
-                    <span class="thumb-title">${g.name}</span>
-                    <span class="tag">● ${g.tag || 'Roblox'}</span>
-                    ${tab === 'my' ? `<button class="del-btn" onclick="my.splice(${i},1);save()">✕</button>` : `<button class="mini-btn" onclick="fav(${i})">★ В мои</button>`}
-                    ${imgTag(g.img, g.name)}
-                </div>
-                <div class="body"><div class="title">${g.name}</div><a class="play" href="roblox://experiences/start?placeId=${g.id}">▶ PLAY</a></div>
-            </div>`).join('') : '<p style="color:#93c5fd;">Пусто. Добавь игру по ID сверху!</p>';
+        document.getElementById('grid').innerHTML = list.length ? list.map((g, i) =>
+            '<div class="card">' +
+                '<div class="thumb">' +
+                    '<span class="thumb-title">' + g.name + '</span>' +
+                    '<span class="tag">● ' + (g.tag || 'Roblox') + '</span>' +
+                    (tab === 'my' ? '<button class="del-btn" onclick="my.splice(' + i + ',1);save()">✕</button>' : '<button class="mini-btn" onclick="fav(' + i + ')">★ В мои</button>') +
+                    imgTag(g.img, g.name) +
+                '</div>' +
+                '<div class="body"><div class="title">' + g.name + '</div><a class="play" href="roblox://experiences/start?placeId=' + g.id + '">▶ PLAY</a></div>' +
+            '</div>'
+        ).join('') : '<p style="color:#93c5fd;">Пусто. Добавь игру по ID сверху!</p>';
     }
 
     const save = () => { localStorage.setItem('rbxMy', JSON.stringify(my)); draw(); };
@@ -133,30 +137,33 @@
     };
 
     async function loadThumbs(gamesList) {
-        // Узнаём uid для игр, у которых его ещё нет
         for (const g of gamesList) {
             if (!g.uid) {
-                const u = await api(`https://roblox.com{g.id}/universe`);
-                if (u?.universeId) g.uid = u.universeId;
+                const u = await api(H_APIS + '/universes/v1/places/' + g.id + '/universe');
+                if (u && u.universeId) g.uid = u.universeId;
             }
         }
         const uids = gamesList.map(g => g.uid).filter(Boolean).join(',');
         if (!uids) return;
 
         const [th, inf] = await Promise.all([
-            api(`https://roblox.com{uids}&size=768x432&format=Png&isCircular=false`),
-            api(`https://roblox.com{uids}`)
+            api(H_THUMB + '/v1/games/multiget/thumbnails?universeIds=' + uids + '&size=768x432&format=Png&isCircular=false'),
+            api(H_GAMES + '/v1/games?universeIds=' + uids)
         ]);
-        th?.data?.forEach(t => {
-            gamesList.filter(x => x.uid == t.universeId).forEach(g => {
-                if (t.thumbnails?.at(0)) g.img = t.thumbnails.at(0).imageUrl;
+        if (th && th.data) {
+            th.data.forEach(t => {
+                gamesList.filter(x => x.uid == t.universeId).forEach(g => {
+                    if (t.thumbnails && t.thumbnails.at(0)) g.img = t.thumbnails.at(0).imageUrl;
+                });
             });
-        });
-        inf?.data?.forEach(i => {
-            gamesList.filter(x => x.uid == i.id).forEach(g => {
-                g.tag = i.playing.toLocaleString('ru-RU') + ' в игре';
+        }
+        if (inf && inf.data) {
+            inf.data.forEach(i => {
+                gamesList.filter(x => x.uid == i.id).forEach(g => {
+                    g.tag = i.playing.toLocaleString('ru-RU') + ' в игре';
+                });
             });
-        });
+        }
     }
 
     async function addGame() {
@@ -165,15 +172,15 @@
         if (!id) return;
         document.getElementById('msg').textContent = 'Загружаю игру и фото...';
         let name = '', img = '', uid = '';
-        const u = await api(`https://roblox.com{id}/universe`);
-        if (u?.universeId) {
+        const u = await api(H_APIS + '/universes/v1/places/' + id + '/universe');
+        if (u && u.universeId) {
             uid = u.universeId;
             const [inf, th] = await Promise.all([
-                api(`https://roblox.com{uid}`),
-                api(`https://roblox.com{uid}&size=768x432&format=Png&isCircular=false`)
+                api(H_GAMES + '/v1/games?universeIds=' + uid),
+                api(H_THUMB + '/v1/games/multiget/thumbnails?universeIds=' + uid + '&size=768x432&format=Png&isCircular=false')
             ]);
-            name = inf?.data?.at(0)?.name || '';
-            img = th?.data?.at(0)?.thumbnails?.at(0)?.imageUrl || '';
+            if (inf && inf.data && inf.data.at(0)) name = inf.data.at(0).name;
+            if (th && th.data && th.data.at(0) && th.data.at(0).thumbnails && th.data.at(0).thumbnails.at(0)) img = th.data.at(0).thumbnails.at(0).imageUrl;
         }
         document.getElementById('msg').textContent = '';
         if (!name) name = prompt('Название игры:', 'Игра #' + id);
@@ -184,10 +191,9 @@
 
     (async () => {
         await loadThumbs(disc);
-        disc.forEach(g => { if (g.tag === 'Загружаю фото...') g.tag = 'Roblox'; });
+        disc.forEach(g => { if (g.tag === 'Загружаю...') g.tag = 'Roblox'; });
         draw();
 
-        // Докачиваем фото для игр, которые уже лежат в «Моих играх»
         if (my.length > 0) {
             await loadThumbs(my);
             save();
