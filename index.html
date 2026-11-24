@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Galacsicx Launcher</title>
+    <title>Roblox Launcher Pro</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body {
@@ -320,9 +320,6 @@ async function fetchRobloxGet(url) {
     return null;
 }
 
-// ==========================================
-// ПРОФИЛЬ
-// ==========================================
 let savedUser = safeParse('robloxUserProfile', null);
 
 function renderProfile() {
@@ -404,9 +401,6 @@ function logoutUser() {
     renderProfile();
 }
 
-// ==========================================
-// КАТАЛОГ С ОКНОМ РЕНДЕРА И ОНЛАЙНОМ
-// ==========================================
 let discoverGames = [];
 let myGames = safeParse('myRobloxGames', []);
 let currentTab = 'discover';
@@ -544,7 +538,6 @@ function renderGames() {
     }
 }
 
-// Скролл для подгрузки
 window.addEventListener('scroll', () => {
     if (currentTab !== 'discover' || isLoading || !nextPageToken) return;
     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
@@ -552,18 +545,12 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// ==========================================
-// ОБНОВЛЕНИЕ ОНЛАЙНА КАЖДУЮ МИНУТУ
-// ==========================================
 async function updateOnlineCounts() {
-    // Берем все игры (и популярные, и добавленные)
     const allGames = [...discoverGames, ...myGames];
-    // Оставляем только те, у которых есть universeId (без него API не выдаст онлайн)
     const uniqueUniverseIds = [...new Set(allGames.map(g => g.universeId).filter(id => id))];
 
     if (uniqueUniverseIds.length === 0) return;
 
-    // Делим на куски по 50 штук, чтобы не перегрузить API
     const chunkSize = 50;
     for (let i = 0; i < uniqueUniverseIds.length; i += chunkSize) {
         const chunk = uniqueUniverseIds.slice(i, i + chunkSize).join(',');
@@ -575,7 +562,6 @@ async function updateOnlineCounts() {
                 infoMap[item.id] = item.playing;
             });
 
-            // Обновляем цифры в массивах
             allGames.forEach(g => {
                 if (g.universeId && infoMap[g.universeId] !== undefined) {
                     g.playing = Number(infoMap[g.universeId]).toLocaleString('ru-RU') + ' в игре';
@@ -583,16 +569,11 @@ async function updateOnlineCounts() {
             });
         }
     }
-    // Перерисовываем, чтобы показать новые цифры
     renderGames();
 }
 
-// Запускаем обновление каждые 60 секунд
 setInterval(updateOnlineCounts, 60000);
 
-// ==========================================
-// КНОПКИ И ИГРЫ
-// ==========================================
 function pickGameImage(id) {
     const picker = document.getElementById('filePicker');
     picker.onchange = (e) => {
@@ -646,7 +627,7 @@ async function addGameById() {
 
     const uData = await fetchRobloxGet(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
     if (uData && uData.universeId) {
-        uid = uData.universeId; // Обязательно сохраняем universeId для обновления онлайна
+        uid = uData.universeId;
         const [infoData, thumbData] = await Promise.all([
             fetchRobloxGet(`https://games.roblox.com/v1/games?universeIds=${uid}`),
             fetchRobloxGet(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uid}&size=768x432&format=Png&isCircular=false`)
@@ -654,7 +635,6 @@ async function addGameById() {
         
         if (infoData && infoData.data && infoData.data.length > 0) {
             gameName = infoData.data[0].name;
-            // Берем реальный онлайн вместо ID
             gamePlaying = Number(infoData.data[0].playing).toLocaleString('ru-RU') + ' в игре';
         }
         
@@ -667,14 +647,14 @@ async function addGameById() {
         status.textContent = '';
         gameName = prompt('Введи название для игры (ID: ' + placeId + '):', 'Моя игра #' + placeId);
         if (!gameName) return;
-        gamePlaying = 'ID: ' + placeId; // Если не удалось найти, показываем ID
+        gamePlaying = 'ID: ' + placeId;
     }
 
     myGames.unshift({ 
         id: placeId, 
         universeId: uid, 
         name: gameName, 
-        playing: gamePlaying, // Сохраняем онлайн
+        playing: gamePlaying,
         c1: '#1e40af', 
         c2: '#0f172a', 
         img: imgUrl 
@@ -693,7 +673,6 @@ function removeGame(id) {
     renderGames();
 }
 
-// ЗАПУСК
 renderProfile();
 renderGames();
 fetchGamesFromRoblox(true);
